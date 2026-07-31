@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
-import { Gender, SSLevel } from "@prisma-client";
+import { Gender, SSLevel, type UserRole } from "@prisma-client";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
 import type { LoginInput, RegisterInput } from "@/validators/schemas.js";
@@ -10,6 +10,7 @@ interface TokenSubject {
   id: string;
   email: string;
   fullName: string;
+  role: UserRole;
 }
 
 function signToken(student: TokenSubject): string {
@@ -18,7 +19,7 @@ function signToken(student: TokenSubject): string {
     throw new Error("JWT_SECRET is not set");
   }
   return jwt.sign(
-    { id: student.id, email: student.email, fullName: student.fullName },
+    { id: student.id, email: student.email, fullName: student.fullName, role: student.role },
     secret,
     { expiresIn: (process.env.JWT_EXPIRES_IN ?? "7d") as jwt.SignOptions["expiresIn"] }
   );
@@ -73,7 +74,7 @@ export const register = asyncHandler<Request<Record<string, never>, unknown, Reg
     const token = signToken(student);
     res.status(201).json({
       token,
-      student: { id: student.id, fullName: student.fullName, email: student.email },
+      student: { id: student.id, fullName: student.fullName, email: student.email, role: student.role },
     });
   }
 );
@@ -101,7 +102,7 @@ export const login = asyncHandler<Request<Record<string, never>, unknown, LoginI
     });
 
     const token = signToken(student);
-    res.json({ token, student: { id: student.id, fullName: student.fullName, email: student.email } });
+    res.json({ token, student: { id: student.id, fullName: student.fullName, email: student.email, role: student.role } });
   }
 );
 

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import type { NextFunction, Request, Response } from "express";
 import type { AuthTokenPayload } from "@/types/express.js";
+import { UserRole } from "@prisma-client";
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers["authorization"];
@@ -24,4 +25,20 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   } catch {
     res.status(403).json({ error: "Invalid or expired token" });
   }
+}
+
+/**
+ * Role guard — must run AFTER authenticateToken. Rejects the request unless
+ * the verified token's role is in the allowed set.
+ */
+export function requireRole(...roles: UserRole[]): (req: Request, res: Response, next: NextFunction) => void {
+  const allowed = new Set<UserRole>(roles);
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const role = req.student?.role;
+    if (!role || !allowed.has(role)) {
+      res.status(403).json({ error: "Insufficient permissions for this action" });
+      return;
+    }
+    next();
+  };
 }

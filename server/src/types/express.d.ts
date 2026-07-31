@@ -4,10 +4,13 @@
 // means every controller gets typed `req.student` without re-declaring it.
 // ============================================================================
 
+import type { UserRole } from "@prisma-client";
+
 export interface AuthTokenPayload {
   id: string;
   email: string;
   fullName: string;
+  role: UserRole;
 }
 
 declare global {

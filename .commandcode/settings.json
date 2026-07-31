@@ -3,7 +3,9 @@
     "allow": [
       "Shell(pnpm:*)",
       "Shell(git add -A && git commit -F - <<'EOF' feat: stream-specific academic affinity in SAW engine The academic criterion now varies per stream instead of feeding the same weightedAcademicScore into all three streams. A core-subject weighted baseline (JSS3 avg + SS1 English/Maths) applies to every stream, upgraded to the real weighted score for the stream the student reported. - saw.ts: AcademicAffinityInput with per-stream scores - recommend.controller.ts: derive academicByStream + persist it in the recommendation log's inputsSnapshot - profile.controller.ts: accept jss3OverallAverage + currentStream - schemas.ts: validate currentStream + jss3OverallAverage - Scores.tsx: stream selector, JSS3 average field, stream-specific SS1 subject fields - schema + migration: academic_profiles.currentStream Co-authored-by: CommandCodeBot <noreply@commandcode.ai> EOF)",
-      "powershell"
+      "powershell",
+      "Shell(findstr:*)",
+      "Shell(dir:*)"
     ],
     "deny": [],
     "defaultMode": "default"
