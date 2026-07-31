@@ -303,18 +303,17 @@ model AcademicProfile {
   studentId String  @unique
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  /// Simple averages computed from SubjectScore rows at submission time.
-  /// Stored (not just computed) so recommendation logs can be fully
-  /// self-contained even if scores are later corrected (Explainability Gap).
   jss3Average Float @default(0)
   ss1Average  Float @default(0)
-
-  /// ω₁ input: (jss3Average × 0.40) + (ss1Average × 0.60) / 100
-  /// Normalized to [0, 1] before SAW aggregation (§3.5.3).
   weightedAcademicScore Float @default(0)
 
-  /// Name of the NERDC 2025 trade subject chosen (if any).
-  /// Score stored in SubjectScore with subject = TRADE_* variant.
+  /// The stream the student is currently placed in (as reported by them).
+  /// Drives which SS1 subjects the client collects. Distinct from
+  /// RecommendationLog.topStream, which is what the engine independently
+  /// recommends — comparing the two is the mismatch-detection signal
+  /// referenced in §1.2 (Science-superiority bias, misaligned placement).
+  currentStream AcademicStream?
+
   tradeSubjectChosen Subject?
 
   recordedAt DateTime @default(now())

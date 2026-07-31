@@ -12,6 +12,7 @@
     "typecheck:watch": "tsc -b --noEmit --watch"
   },
   "dependencies": {
+    "server": "workspace:*",
     "@radix-ui/react-slot": "^1.3.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",

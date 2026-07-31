@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
 import { computeSAW, generateGuidanceInsight, AHP_WEIGHTS } from "@/engine/index.js";
-import { AcademicStream } from "@prisma-client";
+import { AcademicLevel, AcademicStream, Subject } from "@prisma-client";
 import type { PersonalityInput } from "@/types/domain.js";
 
 const ALGORITHM_VERSION = "ahp-saw-v1.0";
@@ -28,6 +28,29 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     return;
   }
 
+  // --- Inducted core score stream fallback logic ---
+  const coreScores = await prisma.subjectScore.findMany({
+    where: {
+      studentId,
+      level: AcademicLevel.SS1,
+      subject: { in: [Subject.ENGLISH_LANGUAGE, Subject.MATHEMATICS] },
+    },
+  });
+  const coreAvg = coreScores.length > 0 ? coreScores.reduce((s, r) => s + r.score, 0) / coreScores.length : 0;
+  const coreWeighted = parseFloat((academic.jss3Average * 0.4 + coreAvg * 0.6).toFixed(2));
+
+  // Stream-neutral baseline everywhere, upgraded to the real weighted score
+  // for whichever stream the student actually reported (currentStream).
+  const academicByStream: Record<AcademicStream, number> = {
+    [AcademicStream.SCIENCE]: coreWeighted,
+    [AcademicStream.HUMANITIES]: coreWeighted,
+    [AcademicStream.BUSINESS]: coreWeighted,
+  };
+  if (academic.currentStream) {
+    academicByStream[academic.currentStream] = academic.weightedAcademicScore;
+  }
+  // --------------------------------------------------
+
   const riasec = await prisma.riasecProfile.findUnique({ where: { studentId } });
   if (!riasec) {
     res.status(400).json({ error: "RIASEC assessment not found. Please complete Step 2 first." });
@@ -48,7 +71,11 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     : DEFAULT_PERSONALITY;
 
   const sawResult = computeSAW(
-    { weightedScore: academic.weightedAcademicScore },
+    {
+      scienceScore: academicByStream[AcademicStream.SCIENCE],
+      humanitiesScore: academicByStream[AcademicStream.HUMANITIES],
+      businessScore: academicByStream[AcademicStream.BUSINESS],
+    },
     {
       scienceAffinity: riasec.scienceAffinity,
       humanitiesAffinity: riasec.humanitiesAffinity,
@@ -57,19 +84,19 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     personality
   );
 
-  const guidanceInsight = generateGuidanceInsight(
-    sawResult.topStream,
-    riasec.summaryCode,
-    sawResult.confidenceLevel,
-    academic.weightedAcademicScore,
-    sawResult
-  );
-
   const streamEnumMap = {
     Science: AcademicStream.SCIENCE,
     Humanities: AcademicStream.HUMANITIES,
     Business: AcademicStream.BUSINESS,
   } as const;
+
+  const guidanceInsight = generateGuidanceInsight(
+    sawResult.topStream,
+    riasec.summaryCode,
+    sawResult.confidenceLevel,
+    academicByStream[streamEnumMap[sawResult.topStream]], // matches the number that actually drove this stream's score
+    sawResult
+  );
 
   const log = await prisma.recommendationLog.create({
     data: {
@@ -82,8 +109,9 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
       guidanceInsight,
       algorithmVersion: ALGORITHM_VERSION,
       ahpWeightsSnapshot: JSON.parse(JSON.stringify(AHP_WEIGHTS)),
+      // Closes the Explainability Gap inside the audit logs
       inputsSnapshot: JSON.parse(
-        JSON.stringify({ academic, riasec, personality, personalitySource })
+        JSON.stringify({ academic, academicByStream, riasec, personality, personalitySource })
       ),
     },
   });

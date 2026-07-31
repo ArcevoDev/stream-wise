@@ -2,6 +2,7 @@
   "name": "dss-project",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "concurrently --names SERVER,CLIENT --prefix-colors blue,green \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
     "build": "pnpm --filter server build && pnpm --filter client build",

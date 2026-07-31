@@ -10,12 +10,14 @@
  *   A3 = Business
  *
  * Formula: Vi = sum(wj * Rij)
- *   where Rij = xij / max(xj)  [benefit criterion normalisation]
+ *   where Rij = xij / max_domain
+ *   [Global scale normalisation; max_domain = 100 to preserve absolute
+ *    psychometric calibration and distance metrics across instruments]
  */
 
 import { W_ACADEMIC, W_RIASEC, W_PERSONALITY } from "./ahp.js";
 import type {
-  AcademicInput,
+  AcademicAffinityInput,
   PersonalityInput,
   RiasecAffinityInput,
   SawResult,
@@ -34,48 +36,30 @@ function normalise(value: number, max: number): number {
 /**
  * Compute SAW preference scores for all three streams.
  *
- * @param academic    - { weightedScore: number (0-100) }
+ * @param academic    - { scienceScore, humanitiesScore, businessScore } (0-100 each)
  * @param riasec      - { scienceAffinity, humanitiesAffinity, businessAffinity } (0-100 each)
  * @param personality - { opennessScore, conscientiousnessScore, extraversionScore, agreeablenessScore } (0-100 each)
  */
 export function computeSAW(
-  academic: AcademicInput,
+  academic: AcademicAffinityInput,
   riasec: RiasecAffinityInput,
   personality: PersonalityInput
 ): SawResult {
-  // ── Normalise Academic score (same for all streams, reflects general readiness) ──
-  const R_academic = normalise(academic.weightedScore, 100);
+  const R_academic_science = normalise(academic.scienceScore, 100);
+  const R_academic_humanities = normalise(academic.humanitiesScore, 100);
+  const R_academic_business = normalise(academic.businessScore, 100);
 
-  // ── Normalise RIASEC affinity per stream ─────────────────
   const R_riasec_science = normalise(riasec.scienceAffinity, 100);
   const R_riasec_humanities = normalise(riasec.humanitiesAffinity, 100);
   const R_riasec_business = normalise(riasec.businessAffinity, 100);
 
-  // ── Normalise Personality per stream ─────────────────────
-  // Science    → rewards Openness (curiosity, analytical depth)
-  // Humanities → rewards Openness + Agreeableness (empathy, creativity)
-  // Business   → rewards Extraversion + Conscientiousness (drive, organisation)
-  const R_personality_science = normalise(personality.opennessScore, 100);
-  const R_personality_humanities = normalise(
-    (personality.opennessScore + personality.agreeablenessScore) / 2,
-    100
-  );
-  const R_personality_business = normalise(
-    (personality.extraversionScore + personality.conscientiousnessScore) / 2,
-    100
-  );
+  const R_personality_science = normalise((personality.opennessScore + personality.conscientiousnessScore) / 2, 100);
+  const R_personality_humanities = normalise((personality.opennessScore + personality.agreeablenessScore) / 2, 100);
+  const R_personality_business = normalise((personality.extraversionScore + personality.conscientiousnessScore) / 2, 100);
 
-  // ── SAW weighted sum per stream ───────────────────────────
-  const vScience =
-    W_ACADEMIC * R_academic + W_RIASEC * R_riasec_science + W_PERSONALITY * R_personality_science;
-
-  const vHumanities =
-    W_ACADEMIC * R_academic +
-    W_RIASEC * R_riasec_humanities +
-    W_PERSONALITY * R_personality_humanities;
-
-  const vBusiness =
-    W_ACADEMIC * R_academic + W_RIASEC * R_riasec_business + W_PERSONALITY * R_personality_business;
+  const vScience = W_ACADEMIC * R_academic_science + W_RIASEC * R_riasec_science + W_PERSONALITY * R_personality_science;
+  const vHumanities = W_ACADEMIC * R_academic_humanities + W_RIASEC * R_riasec_humanities + W_PERSONALITY * R_personality_humanities;
+  const vBusiness = W_ACADEMIC * R_academic_business + W_RIASEC * R_riasec_business + W_PERSONALITY * R_personality_business;
 
   // ── Rank streams ─────────────────────────────────────────
   const streams: { stream: Stream; score: number }[] = [
@@ -85,7 +69,7 @@ export function computeSAW(
   ].sort((a, b) => b.score - a.score);
 
   const totalScore = vScience + vHumanities + vBusiness;
-  const rawCL = streams[0]!.score / totalScore; // raw confidence [0,1]
+  const rawCL = totalScore > 0 ? streams[0]!.score / totalScore : 1 / 3; // fallback to the "all equal" baseline
 
   // Min-max rescale raw CL to display range [0.50, 1.00]
   // so the displayed % is always interpretable (lowest meaningful = 50%)
@@ -100,7 +84,10 @@ export function computeSAW(
     vBusiness: parseFloat(vBusiness.toFixed(4)),
     confidenceLevel: parseFloat(confidenceLevel.toFixed(1)),
     normalised: {
-      academic: parseFloat(R_academic.toFixed(3)),
+      academicScience: parseFloat(R_academic_science.toFixed(3)),
+      academicHumanities: parseFloat(R_academic_humanities.toFixed(3)),
+      academicBusiness: parseFloat(R_academic_business.toFixed(3)),
+      
       riasecScience: parseFloat(R_riasec_science.toFixed(3)),
       riasecHumanities: parseFloat(R_riasec_humanities.toFixed(3)),
       riasecBusiness: parseFloat(R_riasec_business.toFixed(3)),

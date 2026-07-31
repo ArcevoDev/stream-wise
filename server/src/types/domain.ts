@@ -49,8 +49,10 @@ export interface BfiQuestion {
   reverseKeyed: boolean;
 }
 
-export interface AcademicInput {
-  weightedScore: number; // 0-100, derived from AcademicProfile.weightedAcademicScore
+export interface AcademicAffinityInput {
+  scienceScore: number;    // 0-100, stream-specific
+  humanitiesScore: number; // 0-100, stream-specific
+  businessScore: number;   // 0-100, stream-specific
 }
 
 export interface RiasecAffinityInput {
@@ -83,7 +85,9 @@ export interface StreamScore {
 }
 
 export interface SawNormalisedBreakdown {
-  academic: number;
+  academicScience: number;
+  academicHumanities: number;
+  academicBusiness: number;
   riasecScience: number;
   riasecHumanities: number;
   riasecBusiness: number;

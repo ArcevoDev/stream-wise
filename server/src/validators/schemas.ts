@@ -61,6 +61,7 @@ const subjectScoreEntrySchema = z.object({
 });
 
 export const academicScoresSchema = z.object({
+  currentStream: academicStreamEnum,
   scores: z
     .array(subjectScoreEntrySchema)
     .min(1, "At least one subject score is required")
@@ -76,6 +77,7 @@ export const academicScoresSchema = z.object({
       },
       { message: "Duplicate (subject, level) pairs are not allowed in a single submission" }
     ),
+  jss3OverallAverage: z.coerce.number().min(0).max(100),
   tradeSubjectChosen: subjectEnum.optional(),
 });
 
