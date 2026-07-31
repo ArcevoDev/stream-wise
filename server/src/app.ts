@@ -12,6 +12,7 @@ import {
   bfiRoutes,
   recommendRoutes,
   jambRoutes,
+  adminRoutes,
 } from "./modules/index.js";
 
 const app = express();
@@ -105,6 +106,7 @@ app.use("/api/riasec", riasecRoutes);
 app.use("/api/bfi", bfiRoutes);
 app.use("/api/recommend", recommendRoutes);
 app.use("/api/jamb", jambRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });

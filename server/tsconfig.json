@@ -9,6 +9,6 @@
       "@prisma-client": ["./prisma/generated/client.js"]
     }
   },
-  "include": ["src/**/*.ts", "prisma/generated/**/*.ts"],
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "prisma/generated/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

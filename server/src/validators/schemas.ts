@@ -109,6 +109,22 @@ export const jambCatalogQuerySchema = z.object({
   faculty: z.string().trim().optional(),
 });
 
+// ── ADMIN (dashboard + oversight) ────────────────────────────────────────────
+
+export const adminStudentsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().min(2).optional(),
+  stream: academicStreamEnum.optional(),
+  hasRecommendation: z.enum(["true", "false"]).optional(),
+});
+
+export const adminAuditQuerySchema = z.object({
+  studentId: z.string().uuid("studentId must be a valid id").optional(),
+  action: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 // ── Inferred types ────────────────────────────────────────────────────────
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -118,6 +134,8 @@ export type RiasecSubmitInput = z.infer<typeof riasecSubmitSchema>;
 export type BfiSubmitInput = z.infer<typeof bfiSubmitSchema>;
 export type JambValidateInput = z.infer<typeof jambValidateSchema>;
 export type JambCatalogQueryInput = z.infer<typeof jambCatalogQuerySchema>;
+export type AdminStudentsQuery = z.infer<typeof adminStudentsQuerySchema>;
+export type AdminAuditQuery = z.infer<typeof adminAuditQuerySchema>;
 
 export {
   genderEnum,

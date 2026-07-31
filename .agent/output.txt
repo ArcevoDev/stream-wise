@@ -1,6 +1,6 @@
 ================================================================================
 DSS PROJECT — FULL CODEBASE REVIEW & PRIORITY ROADMAP
-Generated: 2026-07-31 · Final Year Project
+Generated: 2026-07-31 · v3 (admin API shipped + smoke-tested) · Final Year Project
 ================================================================================
 
 WHAT THE SYSTEM IS
@@ -18,178 +18,233 @@ STACK
   Backend:  Express 4 + TypeScript (ESM) + Zod validation
   Database: PostgreSQL + Prisma 7 (adapter-pg, generated TS client)
   Engine:   Pure TS modules (AHP, SAW, RIASEC, BFI, confidence) — no DB/HTTP deps
-  Auth:     JWT (7d expiry, bcrypt-12 password hashing), role field on Student
+  Auth:     JWT (7d expiry, bcrypt-12 hashing), role claim on token,
+            requireRole guard, pnpm create:admin bootstrap script
   Deploy:   Vercel (static client) + server behind reverse proxy (Railway/Cloudflare)
+
+PROGRESS SINCE LAST REVIEW (v1 → v2)
+--------------------------------------------------------------------------------
+  [DONE] Per-stream academic affinity committed (fc05a8b). The SAW feed is now
+         stream-aware: a core-subject weighted baseline is applied to all three
+         streams and the student's reported currentStream is upgraded with its
+         true weightedAcademicScore. Note: this is the "reported-stream
+         fallback" design, not full per-subject scoring for every stream —
+         saw.ts itself still just normalises the three numeric inputs it
+         receives.
+  [DONE] RBAC groundwork committed (8b17183): JWT payload now carries role,
+         requireRole(...roles) guard exists in auth.middleware.ts, and
+         scripts/create-admin.ts (pnpm create:admin) upserts an ADMIN account
+         into the Student table.
+  [DONE] Admin analytics API (P0 #1) — server/src/modules/admin/ now serves
+         GET /api/admin/stats (KPIs + completion funnel), /analytics (stream
+         distribution, confidence histogram, registrations by month, top JAMB
+         courses with compliance rate, avg academic score per stream),
+         /students (paginated + searchable + stream/recommendation filters),
+         /students/:id (full drill-down), /audit (trail query), and
+         /export/csv (thesis-appendix export). ALL mounted behind
+         authenticateToken + requireRole(UserRole.ADMIN) — this is the first
+         real use of the guard. Typecheck + build green; smoke-tested 2026-07-31
+         (401 without token, 403 for STUDENT tokens, 400 on bad query params,
+         200 + correct shapes on all endpoints, CSV downloads).
+  [OPEN] Admin Dashboard UI (P0 #2) — the client has no /admin area yet. Add
+         role to AuthStudent, persist it from login/register, then build the
+         dashboard pages against the endpoints above.
+  [OPEN] The client does not know about roles: AuthStudent has no role field,
+         so the UI cannot gate or even show admin/counselor surfaces.
+
+PROGRESS v2 → v3 (admin API shipped)
+--------------------------------------------------------------------------------
+  [DONE] Admin analytics API (P0 #1) is live and smoke-tested:
+         server/src/modules/admin/{admin.controller,admin.routes,index}.ts,
+         schemas in server/src/validators/schemas.ts, mounted in app.ts.
+         Endpoints: /stats, /analytics, /students, /students/:id, /audit,
+         /export/csv. All behind authenticateToken + requireRole(UserRole.ADMIN).
+  [DONE] Typecheck (tsc --noEmit) + full build (pnpm build) green.
+  [DONE] Smoke test 2026-07-31: 401 without token · 403 for STUDENT tokens
+         (RBAC works) · 400 on bad query params · 200 with correct shapes on
+         all endpoints · CSV downloads as attachment.
+  [DONE] pnpm create:admin verified — seeds dss.admin@example.com ADMIN into
+         the Student table (the earlier script error is fixed).
+  [OPEN] Admin Dashboard UI (P0 #2) — see priorities below. Client has no
+         /admin pages, AuthStudent has no role field, and the axios
+         interceptor still only handles 401 (not 403/429) — roadmap items 2–4.
 
 WHAT'S ALREADY STRONG (keep — these are thesis strengths)
 --------------------------------------------------------------------------------
 1. Clean engine separation — AHP/SAW/RIASEC/BFI are pure, testable ESM modules
-   with zero DB or Express coupling. This is exactly what an examiner wants to
-   see and it makes unit testing trivial (currently missing, see Gaps).
+   with zero DB or Express coupling. Exactly what an examiner wants to see.
+   (Unit tests still missing — see Gaps.)
 2. Auditable recommendation logs — RecommendationLog snapshots inputs, weights,
-   and algorithm version as JSON. This closes the "explainability gap" and is a
-   genuine differentiator for a final-year project.
+   and algorithm version as JSON. Closes the explainability gap and is a
+   genuine differentiator.
 3. Fully normalized subject scores (SubjectScore rows + unique constraint) —
    adding a subject is an INSERT, not a migration.
 4. Raw psychometric responses persisted separately (RiasecResponse/BfiResponse)
    — supports re-scoring and the 100-profile validation study from the thesis.
 5. Zod validators derive enums directly from Prisma's generated enums — enum
    drift is structurally impossible.
-6. Security posture is reasonable: helmet, CORS allowlist, rate limiting,
-   JWT with bcrypt, 100kb body limits, audit-log table.
-7. In-flight improvement (uncommitted): stream-specific academic affinity.
-   The old SAW fed the same weightedAcademicScore into all three streams;
-   the new code derives per-stream academic scores (core-subject weighted
-   baseline + the student's reported currentStream). This makes the academic
-   criterion actually stream-aware. Finish and commit this.
+6. Reasonable security posture: helmet, CORS allowlist, rate limiting
+   (auth: 20/15min, api: 200/5min), JWT + bcrypt-12, 100kb body limits,
+   audit-log table defined.
+7. Auth plumbing for RBAC exists end-to-end and is now APPLIED: admin routes
+   are the first real consumers of the guard (token claim → guard → bootstrap
+   script → live /api/admin/* endpoints).
 
-MAIN GAP — NO ADMIN/COUNSELOR/ANALYTICS SIDE (the big missing piece)
---------------------------------------------------------------------------------
-The schema already models Counselor, School, Admin, AuditLog and all the
-data needed for oversight. NONE of it is exposed:
+MAIN GAP — NO ADMIN DASHBOARD / ANALYTICS UI (API done, UI missing)
+-------------------------------------------------------------------------------
+The schema already models Counselor, School, Admin (role), AuditLog and all the
+data needed for oversight. The /api/admin/* API is now live (see Progress), but
+the client side is still missing:
 
-  • No admin/counselor routes or controllers (all /api routes are student-only)
-  • No role-based access control middleware (roles exist on Student but the JWT
-    only carries id/email/fullName, and authenticateToken never checks role)
-  • No dashboard, analytics, or data-visualization UI
+  • No admin dashboard, analytics, or data-visualization UI in the client
+  • requireRole now guards all /api/admin routes, but every STUDENT route is
+    still open to any authenticated role (no /me role gating yet)
   • AuditLog is defined but never written (no code inserts audit records)
-  • Counselor/student assignment exists in the schema but has no API/UI
-  • lastLoginAt is tracked but unused
-  • RecommendationLog history endpoint exists (GET /recommend/history) but the
-    client has no page consuming it
+  • Counselor/Student assignment exists in the schema but has no API/UI
+  • School model is completely unused (register even concatenates schoolName
+    into careerAspiration as a workaround — FIX Bug 2.1)
+  • lastLoginAt is tracked but never surfaced
 
-This is the single highest-value build for the project: an Admin Dashboard +
-analytics layer would give the thesis a complete stakeholder story (student →
-counselor → school admin → platform admin) and a rich results/data chapter.
+This remains the single highest-value build: an Admin Dashboard + analytics
+layer gives the thesis a complete stakeholder story (student → counselor →
+school admin → platform admin) and a rich results/data chapter.
 
-RECOMMENDED PRIORITIES TO BUILD NEXT (ranked)
+RECOMMENDED PRIORITIES TO BUILD NEXT (ranked, v3)
 --------------------------------------------------------------------------------
 P0 — MUST DO (core deliverable, high thesis value)
-  1. Admin dashboard (analytics + oversight)
-     - New /admin area in the client (or a separate dashboard app)
-     - KPI cards: total students, recommendations generated, JAMB validations,
-       completion funnel (registered → scores → RIASEC → BFI → results)
-     - Charts (Recharts already a dependency):
-         • Stream distribution (Science/Humanities/Business) — pie/donut
-         • Confidence-level distribution — histogram
-         • Registrations over time — area/line chart
-         • Top JAMB courses validated + compliance rate
-         • Average academic scores per stream — grouped bar
-         • RIASEC summary-code frequency — treemap/bar
-     - Student table with search + drill-down detail view
-       (academic profile, RIASEC/BFI scores, recommendation history, JAMB
-       validations, audit trail) — the RecommendationLog inputsSnapshot JSON
-       already contains everything needed for a full explainability view.
-     - Export to CSV for the thesis appendix
-  2. Server-side analytics endpoint(s)
-     - GET /api/admin/stats (KPIs + completion funnel)
-     - GET /api/admin/analytics (streams, confidence, registrations-by-month)
-     - GET /api/admin/students (paginated, searchable)
-     - GET /api/admin/students/:id (full drill-down)
-     - Optionally a counselor-scoped variant (counselor sees only assigned
-       students) to satisfy the Counselor stakeholder role.
-  3. Role-based access control
-     - Extend JWT payload with role (and role-check middleware requireRole)
-     - Admin bootstrap route (seed an ADMIN user) or role escalation script
-     - Protect all new /admin routes; keep student routes student-scoped
-  4. Wire up AuditLog (cheap, high credibility)
+  1. [DONE] Admin analytics API (server) — shipped in server/src/modules/admin/,
+     mounted at /api/admin, guarded by authenticateToken + requireRole(ADMIN).
+     Smoke-tested 2026-07-31 (see PROGRESS v2 → v3).
+     - GET /api/admin/stats        → KPIs + completion funnel (registered →
+       scores → RIASEC → BFI → results), totals for students/recommendations/
+       JAMB validations
+     - GET /api/admin/analytics    → stream distribution, confidence-level
+       histogram, registrations over time, top JAMB courses + compliance,
+       avg academic score per stream. (RIASEC summary-code frequency was in
+       the original spec but NOT shipped — add it if the dashboard wants a
+       Holland-code chart.)
+     - GET /api/admin/students     → paginated + searchable list
+     - GET /api/admin/students/:id → full drill-down (academic profile,
+       RIASEC/BFI scores, recommendation history, JAMB validations, audit
+       trail) — inputsSnapshot JSON already has everything for an
+       explainability view
+     - GET /api/admin/export/csv   → thesis-appendix export
+     - Counselor-scoped variant (counselor sees only assigned students) still
+       TODO for the Counselor role — the guard accepts any role set.
+  2. Admin Dashboard UI (client)
+     - Add role to AuthStudent + persist it from login/register responses so
+       the client can gate /admin
+     - New /admin area (role-gated client-side, server enforces regardless):
+       KPI cards, completion funnel, charts (Recharts already a dependency —
+       stream donut, confidence histogram, registrations line/area, top JAMB
+       courses bar, RIASEC treemap/bar), searchable student table, student
+       drill-down page, CSV export button
+  3. Wire up AuditLog (cheap, high credibility)
      - Write audit records on LOGIN, SCORES_SUBMITTED, RIASEC_COMPLETED,
-       BFI_COMPLETED, RECOMMENDATION_GENERATED, JAMB_VALIDATED, LOGOUT
-     - Show audit trail on the admin student-detail page
+       BFI_COMPLETED, RECOMMENDATION_GENERATED, JAMB_VALIDATED
+     - Show the audit trail on the admin student-detail page
 
 P1 — SHOULD DO (robustness + demo polish)
+  4. Client auth fixes (examiner-visible bugs today)
+     - 403 vs 401 mismatch: server returns 403 for invalid/expired tokens but
+       the client interceptor only handles 401 → an expired session leaves the
+       app in a silently broken "logged in" state. Handle 403 too.
+     - 401/403 handling is a hard window.location.href reload that never
+       touches React state; clear AuthContext state on logout for real
+     - No 429 handling — server rate-limits but the client shows a generic
+       error when throttled
   5. Unit tests for the decision engine (currently ZERO tests anywhere)
      - AHP: weights ≈ [0.540, 0.297, 0.163], CR ≈ 0.007 ≤ 0.10
-     - RIASEC: 48-response scoring, summary code ordering, affinity math
+     - RIASEC: 48-response scoring, summary-code ordering, affinity math
      - BFI: reverse-keyed item flipping (6 - value), normalization
      - SAW: per-stream normalization, ranking, confidence rescaling [50,100],
        zero-input fallback (rawCL → 1/3)
      - Validation study: simulate the thesis's 100 profiles and assert output
-       stability (this becomes "Validation Testing §3.8" evidence)
-     - Vitest is the natural fit; engine has zero dependencies so tests are fast
-  6. Student experience finishing touches
-     - Recommendation history page (endpoint already exists) + "re-run" vs
-       "view previous" distinction
-     - Completion/resume state so students land back on their next incomplete
-       step (step 1→4 progress currently assumes linear flow)
-     - JSS3 subject-level scores instead of a single overall average (schema
-       supports it — the form only collects one number)
-     - Edit profile page (password change, career aspiration — the /me route
-       returns role/schoolId/counselorId the UI never shows)
-  7. Error & resilience hardening
-     - Central error logging (console.error only today; add pino — it's already
-       in devDependencies) + a /api/health that reports DB connectivity
-     - Consistent error envelope (currently mixed: {error}, {message}, raw zod
-       details) — pick one shape, e.g. {error, details?}
-     - Token expiry → silent 401 redirect is fine, but add refresh-on-401 UX
-       and clear the student context state (localStorage cleared but React state
-       isn't, so navbar can show stale user until reload)
+       stability — becomes "Validation Testing" evidence
+     - Vitest is the natural fit; engine has zero dependencies
+  6. JAMB validator correctness (data-integrity issue)
+     - The client sends hardcoded STREAM_SUBJECTS templates, NOT the student's
+       real SubjectScore rows — a student could "pass" validation with subjects
+       they never actually took. Fetch and send real SubjectScore rows.
+     - Review trade-subject handling and DIGITAL_TECHNOLOGIES /
+       CITIZENSHIP_AND_HERITAGE (new NERDC core) coverage
+  7. Student experience finishing touches
+     - Recommendation history page (endpoint exists) + "view previous" vs
+       "re-run" distinction; surface JAMB validation history too
+     - Resume/completion tracking — the flow is fully linear today; a student
+       who logs out mid-flow is dumped back to /scores
+     - Edit profile page (password change, career aspiration, school)
+     - JSS3 per-subject scores (schema supports SubjectScore rows for JSS3;
+       the form only collects one overall average)
+     - Fix the Bug 2.1 schoolName workaround: create/link real School records
 
 P2 — NICE TO HAVE (deeper thesis material)
-  8. Admin CRUD: manage JAMB course catalog (currently seed-only, no UI/API
-     to add/update courses), manage students (deactivate, reassign counselor)
+  8. Admin CRUD: manage JAMB course catalog (seed-only today), manage students
+     (deactivate, reassign counselor)
   9. Counselor portal — list assigned students, view their results, add notes
-     (Student model already links counselorId; schema supports it)
- 10. CSV/PDF export of individual recommendation (print is currently the only
-     "save" path)
- 11. i18n-ready structure (not required; Nigeria-focused English is fine)
+     (Student.counselorId already links them)
+ 10. CSV/PDF export of an individual recommendation (print is the only "save")
+ 11. Client .env.example for VITE_API_BASE_URL
+ 12. i18n-ready structure (not required; Nigeria-focused English is fine)
 
 SMALLER IMPROVEMENTS SPOTTED (quick wins)
 --------------------------------------------------------------------------------
-  • auth.controller.ts Bug 2.1 workaround — schoolName is concatenated into
-    careerAspiration ("[School: X] — aspiration") because Student has no
-    schoolName column. Proper fix: create/link a School record from schoolName
-    in register, or add a dedicated schoolName field. Currently the school
-    stakeholder model is effectively unused.
-  • register endpoint sets role implicitly (always STUDENT) — fine, but ensure
-    no client payload can set role (Zod schema doesn't accept it — good).
-  • getMe returns schoolId/counselorId but nothing consumes them.
-  • Results.tsx hardcodes STREAM_SUBJECTS per stream for JAMB validation while
-    the server has the real SubjectScore rows — the client should send the
-    student's actual subject scores instead of a static list, so validation
-    reflects reality (currently a student could "pass" with subjects they never
-    took). This is a correctness issue worth fixing alongside the dashboard.
-  • JAMB validator ignores trade subjects and DIGITAL_TECHNOLOGIES /
-    CITIZENSHIP_AND_HERITAGE (new NERDC core) — worth a review pass.
-  • Scores form only collects SS1 scores + JSS3 overall average; SubjectScore
-    model supports JSS3 per-subject rows. Using them would make the academic
-    criterion genuinely normalized.
-  • api/errors.ts — no 429 (rate-limit) handling; user sees generic message.
-  • Confidence CL formula rescales to [50,100]; document the mapping in the
-    UI (it already shows the number, but the "why 50 min" is non-obvious).
-  • No .env.example for the client (VITE_API_BASE_URL) — add one.
-  • README is thin for a final-year project — add architecture diagram (ASCII),
-    API reference table, test instructions, and a "validation study" section.
+  • Error envelope: validation details shape differs between validate middleware
+    (flattened {path, message}) and the global ZodError handler (raw issues);
+    dev-mode 500s leak raw error strings. Pick one shape ({error, details?}).
+  • Every authenticated route accepts any role today — even the /me endpoint
+    should start using requireRole-aware semantics as admin routes land.
+  • getMe returns schoolId/counselorId that nothing consumes.
+  • Confidence CL formula rescales to [50,100] — document the "why 50 min" in
+    the UI (it already shows the number).
+  • No test script in server/package.json; no client test setup either.
+  • Dead scaffolding: empty client src/hooks/, unused Separator/Badge UI
+    primitives, legacy @layer components CSS, committed tsconfig.tsbuildinfo.
+  • Tailwind JIT risk: StreamCard builds dynamic classes bg-${color}-100 /
+    text-${color}-600 with no safelist — works only because Welcome.tsx
+    happens to use the same literals. Add a safelist.
+  • README is thin for a final-year project — add an ASCII architecture
+    diagram, API reference table, test instructions, and a "validation study"
+    section.
+
+INTEGRATION STATUS — arc-ui deferred (2026-07-31)
+--------------------------------------------------------------------------------
+  arc-ui is NOT wired in. Adoption is on hold — awaiting arc-ui. DSS auth
+  stays self-contained (server/src/modules/auth) with its own JWT + role
+  claim + requireRole RBAC; no external identity dependency is part of this
+  project. Check the roadmap before adding any @arc-ui/* package.
 
 ARCHITECTURE NOTES / RISKS
 --------------------------------------------------------------------------------
-  • A single Student table carries role (STUDENT default) — COUNSELOR and ADMIN
-    would also need login. Either reuse Student with a role check, or introduce
-    the separate Counselor login path already implied by the schema. Simplest
-    for the project: extend auth to accept role from the Student table and seed
-    an admin account. Keep the design decision explicit in the thesis.
-  • Prisma 7 generated client is committed under server/prisma/generated — make
-    sure "prisma generate" is part of deploy (vercel.json already does it).
-  • server/scripts/fix-prisma-imports.js post-build step — confirm it survives
-    a clean build; CI would catch it.
-  • The `server` workspace package is imported by the client (server/enums) —
-    this couples the client build to the server workspace; fine for a monorepo
-    but note it in the thesis build pipeline.
+  • Single Student table carries role (STUDENT default); COUNSELOR and ADMIN
+    log in through the same table today (create:admin seeds ADMIN). The
+    separate Counselor entity is unused. Make the login-path decision explicit
+    in the thesis.
+  • Prisma 7 generated client is committed under server/prisma/generated; the
+    post-build scripts/fix-prisma-imports.js step must survive a clean build —
+    CI would catch it.
+  • The client imports server/enums (server package exports generated Prisma
+    enums) — couples the client build to the server workspace. Fine for a
+    monorepo; note it in the thesis build pipeline.
+  • RecommendationLog grows a row per GET /api/recommend (no dedup) — fine at
+    project scale, worth noting for the results chapter.
 
 ================================================================================
 SUMMARY OF TOP PRIORITIES (do these in order)
 ================================================================================
-  1. Finish & commit the in-flight per-stream academic affinity change (saw.ts,
-     recommend.controller.ts, profile.controller.ts, schemas.ts, Scores.tsx).
-  2. Add role-aware JWT + requireRole middleware + seed an ADMIN account.
-  3. Build GET /api/admin/* endpoints (stats, analytics, students, drill-down).
-  4. Build the Admin Dashboard UI (KPIs, stream/confidence/time charts,
-     searchable student table, student detail with full explainability view).
-  5. Wire AuditLog writes into existing flows + surface them in the dashboard.
-  6. Add Vitest unit tests for the AHP/SAW/RIASEC/BFI engine + 100-profile
+  1. [DONE] Build GET /api/admin/* endpoints (stats, analytics, students,
+     drill-down, CSV) — first real use of requireRole("ADMIN"). Smoke-tested.
+  2. [NEXT] Add role to client AuthStudent + persist it; create a role-gated
+     /admin area.
+  3. Build the Admin Dashboard UI (KPI cards, funnel, charts, searchable
+     student table, drill-down with explainability + audit trail, CSV export).
+  4. Wire AuditLog writes into existing flows and surface them in the dashboard.
+  5. Fix client auth: 403 handling, 429 handling, true logout state reset.
+  6. Fix the JAMB validator to use the student's real SubjectScore rows.
+  7. Add Vitest unit tests for the AHP/SAW/RIASEC/BFI engine + 100-profile
      validation simulation.
-  7. Fix the JAMB validator to use the student's real SubjectScore rows.
-  8. Student-side polish: history page, resume-step routing, profile editing.
+  8. Student polish: history page, resume-step routing, profile editing, real
+     School records (drop the schoolName concatenation workaround).
 
 Expected outcome: a complete, defensible final-year project with a working
 student journey AND a data-driven admin/analytics layer that demonstrates the
