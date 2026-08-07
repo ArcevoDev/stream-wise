@@ -1,5 +1,5 @@
 // ============================================================================
-// Seed script — populates the JAMB course catalog.
+// Seed script — populates the JAMB course catalog + versioned domain catalogs.
 // Run via: pnpm prisma:migrate (auto-seeds) or manually: pnpm seed
 // Uses the same adapter-backed Prisma client as the running app so behaviour
 // is identical between seeding and normal operation.
@@ -9,11 +9,19 @@
 // "Economics or Commerce"-style alternatives, we pick the single subject
 // that the SAW recommendation flow would assign to that stream's compulsory
 // elective set — see README for the full alternative-subject discussion.
+//
+// P0-1: this seed now also creates:
+//   - the active AcademicSession ("2025/2026")
+//   - the SubjectCatalog rows (which subjects exist / are core / trade / stream)
+//   - the versioned AhpWeightSet row (computed via the engine's
+//     computeAhpWeights on the canonical pairwise matrix, so the DB row is
+//     guaranteed to match the engine math exactly)
 // ============================================================================
 
 import "dotenv/config";
 import { prisma, disconnectPrisma } from "@/db/prisma.js";
 import { AcademicStream, Subject } from "./generated/client";
+import { computeAhpWeights, DEFAULT_PAIRWISE_MATRIX, DEFAULT_CRITERION_LABELS } from "../src/engine/ahp.js";
 import type { AcademicStream as AcademicStreamType, Subject as SubjectType } from "./generated/client.js";
 
 interface JambSeedEntry {
@@ -233,6 +241,146 @@ const JAMB_CATALOG: JambSeedEntry[] = [
   },
 ];
 
+const ACTIVE_SESSION = "2025/2026";
+
+/**
+ * SubjectCatalog seed — one row per (session, subject) with its stream
+ * placement, core/trade flags, and display code/name. This is the versioned
+ * source of truth for "which subjects exist in this NERDC session" (P0-1a).
+ * The Subject enum stays the stable identity; the catalog scopes validity.
+ */
+const SUBJECT_CATALOG: {
+  subject: SubjectType;
+  code: string;
+  name: string;
+  stream: AcademicStreamType | null;
+  isCore?: boolean;
+  isTrade?: boolean;
+}[] = [
+  // ── COMPULSORY CORE ───────────────────────────────────────
+  { subject: Subject.ENGLISH_LANGUAGE, code: "ENG", name: "English Language", stream: null, isCore: true },
+  { subject: Subject.MATHEMATICS, code: "MTH", name: "Mathematics", stream: null, isCore: true },
+  { subject: Subject.CITIZENSHIP_AND_HERITAGE, code: "CHH", name: "Citizenship and Heritage", stream: null, isCore: true },
+  { subject: Subject.DIGITAL_TECHNOLOGIES, code: "DGT", name: "Digital Technologies", stream: null, isCore: true },
+
+  // ── SCIENCE STREAM ────────────────────────────────────────
+  { subject: Subject.BIOLOGY, code: "BIO", name: "Biology", stream: AcademicStream.SCIENCE },
+  { subject: Subject.CHEMISTRY, code: "CHM", name: "Chemistry", stream: AcademicStream.SCIENCE },
+  { subject: Subject.PHYSICS, code: "PHY", name: "Physics", stream: AcademicStream.SCIENCE },
+  { subject: Subject.FURTHER_MATHEMATICS, code: "FMH", name: "Further Mathematics", stream: AcademicStream.SCIENCE },
+  { subject: Subject.AGRICULTURAL_SCIENCE, code: "AGR", name: "Agricultural Science", stream: AcademicStream.SCIENCE },
+  { subject: Subject.ANIMAL_HUSBANDRY, code: "ANH", name: "Animal Husbandry", stream: AcademicStream.SCIENCE },
+  { subject: Subject.TECHNICAL_DRAWING, code: "TDR", name: "Technical Drawing", stream: AcademicStream.SCIENCE },
+  { subject: Subject.FOOD_AND_NUTRITION, code: "FDN", name: "Food and Nutrition", stream: AcademicStream.SCIENCE },
+  { subject: Subject.HOME_MANAGEMENT, code: "HOM", name: "Home Management", stream: AcademicStream.SCIENCE },
+  { subject: Subject.BASIC_SCIENCE, code: "BSC", name: "Basic Science", stream: AcademicStream.SCIENCE },
+
+  // ── HUMANITIES STREAM ─────────────────────────────────────
+  { subject: Subject.LITERATURE_IN_ENGLISH, code: "LIT", name: "Literature in English", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.GOVERNMENT, code: "GOV", name: "Government", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.HISTORY, code: "HIS", name: "History", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.GEOGRAPHY, code: "GEO", name: "Geography", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.CHRISTIAN_RELIGIOUS_STUDIES, code: "CRS", name: "Christian Religious Studies", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.ISLAMIC_RELIGIOUS_STUDIES, code: "IRS", name: "Islamic Religious Studies", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.FRENCH, code: "FRE", name: "French", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.YORUBA, code: "YOR", name: "Yoruba", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.IGBO, code: "IGB", name: "Igbo", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.HAUSA, code: "HAU", name: "Hausa", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.ARABIC, code: "ARA", name: "Arabic", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.VISUAL_ARTS, code: "VAR", name: "Visual Arts", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.MUSIC, code: "MUS", name: "Music", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.SOCIAL_STUDIES, code: "SOS", name: "Social Studies", stream: AcademicStream.HUMANITIES },
+
+  // ── BUSINESS STREAM ───────────────────────────────────────
+  { subject: Subject.ECONOMICS, code: "ECO", name: "Economics", stream: AcademicStream.BUSINESS },
+  { subject: Subject.COMMERCE, code: "COM", name: "Commerce", stream: AcademicStream.BUSINESS },
+  { subject: Subject.FINANCIAL_ACCOUNTING, code: "FAC", name: "Financial Accounting", stream: AcademicStream.BUSINESS },
+  { subject: Subject.BOOK_KEEPING, code: "BOK", name: "Book Keeping", stream: AcademicStream.BUSINESS },
+  { subject: Subject.MARKETING, code: "MKT", name: "Marketing", stream: AcademicStream.BUSINESS },
+  { subject: Subject.OFFICE_PRACTICE, code: "OFP", name: "Office Practice", stream: AcademicStream.BUSINESS },
+  { subject: Subject.STORE_MANAGEMENT, code: "STM", name: "Store Management", stream: AcademicStream.BUSINESS },
+  { subject: Subject.DATA_PROCESSING, code: "DTP", name: "Data Processing", stream: AcademicStream.BUSINESS },
+  { subject: Subject.BUSINESS_STUDIES, code: "BST", name: "Business Studies", stream: AcademicStream.BUSINESS },
+
+  // ── VOCATIONAL TRADE SUBJECTS (NERDC — pick one) ──────────
+  { subject: Subject.TRADE_WOODWORK, code: "TWW", name: "Trade: Woodwork", stream: null, isTrade: true },
+  { subject: Subject.TRADE_METALWORK, code: "TMW", name: "Trade: Metalwork", stream: null, isTrade: true },
+  { subject: Subject.TRADE_ELECTRONICS, code: "TEL", name: "Trade: Electronics", stream: null, isTrade: true },
+  { subject: Subject.TRADE_AUTO_MECHANICS, code: "TAM", name: "Trade: Auto Mechanics", stream: null, isTrade: true },
+  { subject: Subject.TRADE_COSMETOLOGY, code: "TCS", name: "Trade: Cosmetology", stream: null, isTrade: true },
+  { subject: Subject.TRADE_CATERING_CRAFT, code: "TCC", name: "Trade: Catering Craft", stream: null, isTrade: true },
+  { subject: Subject.TRADE_GARMENT_MAKING, code: "TGM", name: "Trade: Garment Making", stream: null, isTrade: true },
+  { subject: Subject.TRADE_PLUMBING, code: "TPL", name: "Trade: Plumbing", stream: null, isTrade: true },
+  { subject: Subject.TRADE_BUILDING_CONSTRUCTION, code: "TBC", name: "Trade: Building Construction", stream: null, isTrade: true },
+  { subject: Subject.TRADE_COMPUTER_CRAFT, code: "TCC2", name: "Trade: Computer Craft", stream: null, isTrade: true },
+
+  // ── GENERAL / CROSS-STREAM ────────────────────────────────
+  { subject: Subject.CIVIC_EDUCATION, code: "CVE", name: "Civic Education (legacy)", stream: null },
+  { subject: Subject.COMPUTER_STUDIES, code: "CPS", name: "Computer Studies", stream: null },
+];
+
+async function seedVersionedCatalogs(): Promise<void> {
+  console.log("Seeding versioned catalogs (AcademicSession + SubjectCatalog + AhpWeightSet)...");
+
+  // Upsert the active academic session.
+  const session = await prisma.academicSession.upsert({
+    where: { name: ACTIVE_SESSION },
+    update: { isActive: true },
+    create: { name: ACTIVE_SESSION, label: "2025/2026 NERDC curriculum", isActive: true },
+  });
+
+  // Rebuild the subject catalog for this session (idempotent).
+  await prisma.subjectCatalog.deleteMany({ where: { academicSessionId: session.id } });
+  await prisma.subjectCatalog.createMany({
+    data: SUBJECT_CATALOG.map((s, idx) => ({
+      academicSessionId: session.id,
+      subject: s.subject,
+      subjectCode: s.code,
+      name: s.name,
+      streamCategory: s.stream,
+      isCore: s.isCore ?? false,
+      isTradeSubject: s.isTrade ?? false,
+      sortOrder: idx,
+    })),
+  });
+
+  // Compute the canonical weight set via the engine itself — the DB row is
+  // guaranteed to match computeAhpWeights() exactly. (P0-1c provenance.)
+  const ahp = computeAhpWeights(DEFAULT_PAIRWISE_MATRIX, DEFAULT_CRITERION_LABELS);
+
+  const existing = await prisma.ahpWeightSet.findUnique({ where: { version: "ahp-v1.0" } });
+  if (!existing) {
+    // Only one weight set may be active at a time — deactivate any others
+    // before activating this one (idempotent re-seed).
+    await prisma.ahpWeightSet.updateMany({ where: { isActive: true }, data: { isActive: false } });
+    await prisma.ahpWeightSet.create({
+      data: {
+        version: "ahp-v1.0",
+        label: "5 guidance counsellors' expert judgement (thesis §3.5.2)",
+        criterionLabels: DEFAULT_CRITERION_LABELS,
+        pairwiseMatrix: DEFAULT_PAIRWISE_MATRIX,
+        weights: ahp.weights,
+        lambdaMax: ahp.lambda,
+        ci: ahp.ci,
+        cr: ahp.cr,
+        isActive: true,
+        academicSessionId: session.id,
+      },
+    });
+  } else {
+    // Keep the seeded set active (fresh re-seed after a wipe), deactivating
+    // any other active set. Refresh the session link too — after a wipe the
+    // old FK may have been SET NULL.
+    await prisma.ahpWeightSet.updateMany({ where: { isActive: true }, data: { isActive: false } });
+    await prisma.ahpWeightSet.update({
+      where: { id: existing.id },
+      data: { isActive: true, academicSessionId: session.id },
+    });
+  }
+
+  console.log(`Seeded academic session "${ACTIVE_SESSION}" with ${SUBJECT_CATALOG.length} catalog subjects + AHP weight set (CR ${ahp.cr}).`);
+}
+
 async function main(): Promise<void> {
   console.log("Seeding JAMB course catalog (relational JambCourse + JambCourseSubject)...");
 
@@ -248,12 +396,15 @@ async function main(): Promise<void> {
         streamCategory: entry.streamCategory,
         description: entry.description,
         utmeCutoffHint: entry.utmeCutoffHint,
+        admissionCycle: ACTIVE_SESSION,
         mandatorySubjects: {
           create: entry.mandatorySubjects.map((subject) => ({ subject })),
         },
       },
     });
   }
+
+  await seedVersionedCatalogs();
 
   console.log(`Seeded ${JAMB_CATALOG.length} JAMB course entries with relational subject requirements.`);
   console.log("Seed complete.");

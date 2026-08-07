@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
+import { writeAudit } from "@/services/audit.js";
 import { AcademicLevel, AcademicStream, type Subject } from "@prisma-client";
 import type { AcademicScoresInput } from "@/validators/schemas.js";
 
@@ -29,21 +30,42 @@ export const saveScores = asyncHandler<Request<Record<string, never>, unknown, A
     const { scores, jss3OverallAverage, currentStream, tradeSubjectChosen } = req.body;
     const { jss3Average, ss1Average, weightedAcademicScore } = computeAggregate(scores, jss3OverallAverage);
 
-    const results = await prisma.$transaction([
-      ...scores.map((entry) =>
-        prisma.subjectScore.upsert({
-          where: { studentId_subject_level: { studentId, subject: entry.subject as Subject, level: entry.level as AcademicLevel } },
-          update: { score: entry.score },
-          create: { studentId, subject: entry.subject as Subject, level: entry.level as AcademicLevel, score: entry.score },
-        })
-      ),
-      prisma.academicProfile.upsert({
-        where: { studentId },
-        update: { jss3Average, ss1Average, weightedAcademicScore, currentStream: currentStream as AcademicStream, tradeSubjectChosen: tradeSubjectChosen as Subject | undefined },
-        create: { studentId, jss3Average, ss1Average, weightedAcademicScore, currentStream: currentStream as AcademicStream, tradeSubjectChosen: tradeSubjectChosen as Subject | undefined },
-      }),
-    ]);
+    // Give the transaction a generous window to start. Prisma's default is 5s
+    // and P2028 ("Unable to start a transaction in the given time") fires when
+    // the pool is momentarily saturated (e.g. right after a tsx watch reload
+    // or under bursty concurrent requests) — the queries themselves are fast.
+    const results = await prisma.$transaction(
+      [
+        ...scores.map((entry) =>
+          prisma.subjectScore.upsert({
+            where: { studentId_subject_level: { studentId, subject: entry.subject as Subject, level: entry.level as AcademicLevel } },
+            update: { score: entry.score },
+            create: { studentId, subject: entry.subject as Subject, level: entry.level as AcademicLevel, score: entry.score },
+          })
+        ),
+        prisma.academicProfile.upsert({
+          where: { studentId },
+          update: { jss3Average, ss1Average, weightedAcademicScore, currentStream: currentStream as AcademicStream, tradeSubjectChosen: tradeSubjectChosen as Subject | undefined },
+          create: { studentId, jss3Average, ss1Average, weightedAcademicScore, currentStream: currentStream as AcademicStream, tradeSubjectChosen: tradeSubjectChosen as Subject | undefined },
+        }),
+      ],
+      { timeout: 15_000 }
+    );
     const profile = results[results.length - 1];
+
+    // P1-2: audit the score submission.
+    await writeAudit(req, {
+      action: "SCORES_SUBMITTED",
+      studentId,
+      metadata: {
+        currentStream,
+        subjectCount: scores.length,
+        jss3Average,
+        ss1Average,
+        weightedAcademicScore,
+      },
+    });
+
     res.json({ message: "Academic scores saved", profile });
   }
 );

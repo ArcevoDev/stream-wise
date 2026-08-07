@@ -7,10 +7,13 @@ export type Stream = "Science" | "Humanities" | "Business";
 
 export type Gender = "MALE" | "FEMALE" | "UNSPECIFIED";
 
+export type UserRole = "STUDENT" | "COUNSELOR" | "SCHOOL_ADMIN" | "ADMIN";
+
 export interface AuthStudent {
   id: string;
   fullName: string;
   email: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {
@@ -24,7 +27,18 @@ export interface RegisterPayload {
   password: string;
   gender?: Gender;
   schoolName?: string;
+  careerAspiration?: string;
   dateOfBirth?: string;
+}
+
+// P0-4a: the four ethics consent points from the landing page. All must be
+// true before the assessment flow proceeds.
+export interface ConsentPayload {
+  consentPoint1: boolean;
+  consentPoint2: boolean;
+  consentPoint3: boolean;
+  consentPoint4: boolean;
+  consentVersion?: string;
 }
 
 export type RiasecLetter = "R" | "I" | "A" | "S" | "E" | "C";
@@ -79,7 +93,10 @@ export interface RecommendationResult {
   confidenceLevel: number;
   guidanceInsight: string;
   ahpWeights: AhpWeightsResult;
-  personalitySource: "assessed" | "default";
+  // P0-3b: "assessed" = real BFI profile used; "renormalized" = BFI skipped,
+  // personality weight redistributed over the criteria actually present
+  // (never fake neutral data injected at full weight).
+  personalitySource: "assessed" | "renormalized";
   logId: string;
 }
 
@@ -99,8 +116,8 @@ export interface JambCourse {
 
 /**
  * Successful JAMB validation response from POST /jamb/validate.
- * FIX (Bug 2.9): extracted into a discriminated union so the error-path
- * synthetic object is typed accurately without lying about required fields.
+ * Discriminated union: error-path objects carry `error`, success carries the
+ * fields below.
  */
 export interface JambValidationSuccess {
   error?: never;
@@ -124,7 +141,7 @@ export interface JambValidationError {
   message?: string;
 }
 
-/** Discriminated union — prefer checking `.error` first. */
+/** Discriminated union. Prefer checking `.error` first. */
 export type JambValidationResult = JambValidationSuccess | JambValidationError;
 
 export interface ApiErrorResponse {

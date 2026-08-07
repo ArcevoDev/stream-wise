@@ -10,6 +10,7 @@ node_modules/
 # Build outputs
 dist/
 build/
+*.tsbuildinfo
 
 # Prisma
 server/prisma/generated/
@@ -30,4 +31,5 @@ pnpm-debug.log*
 .idea/
 
 # codebase snapshot
-dss_project_codebase_snapshot.txt
+stream_wise_codebase_snapshot.txt
+StreamWise_Chapters1-2_Rewrite.txt

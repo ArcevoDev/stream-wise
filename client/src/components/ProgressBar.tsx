@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle } from "lucide-react";
-import { Progress } from "./ui/progress";
+import { Progress } from "@arcevo/facet-components";
 
 interface ProgressBarProps {
   step: number;
@@ -13,14 +13,14 @@ export default function ProgressBar({ step, total = 4, labels = [] }: ProgressBa
   return (
     <div className="w-full">
       {/* Numeric summary */}
-      <div className="flex justify-between text-xs text-gray-500 mb-2">
+      <div className="flex justify-between text-xs text-muted-foreground mb-2">
         <span>
           Step {step} of {total}
         </span>
         <span>{pct}% complete</span>
       </div>
 
-      {/* shadcn Progress track */}
+      {/* Facet Progress track */}
       <Progress value={pct} />
 
       {/* Step indicators */}
@@ -33,16 +33,16 @@ export default function ProgressBar({ step, total = 4, labels = [] }: ProgressBa
             return (
               <div key={i} className="flex flex-col items-center gap-0.5 min-w-0">
                 {done ? (
-                  <CheckCircle2 size={14} className="text-brand-500 shrink-0" />
+                  <CheckCircle2 size={14} className="text-primary shrink-0" />
                 ) : (
                   <Circle
                     size={14}
-                    className={`shrink-0 ${active ? "text-brand-500" : "text-gray-300"}`}
+                    className={`shrink-0 ${active ? "text-primary" : "text-muted-foreground/30"}`}
                   />
                 )}
                 <span
                   className={`text-[10px] font-medium text-center leading-tight ${
-                    active ? "text-brand-500" : done ? "text-gray-500" : "text-gray-300"
+                    active ? "text-primary" : done ? "text-muted-foreground" : "text-muted-foreground/40"
                   }`}
                 >
                   {l}

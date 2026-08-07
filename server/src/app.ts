@@ -22,7 +22,7 @@ app.set("trust proxy", 1);
 const PORT = process.env["PORT"] ?? 5000;
 const IS_PROD = process.env["NODE_ENV"] === "production";
 
-// Security headers — CSP disabled because this is a JSON API, not an HTML server
+// Security headers. CSP disabled because this is a JSON API, not an HTML server
 app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS
@@ -139,7 +139,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`DSS API running — port ${PORT} — ${process.env["NODE_ENV"] ?? "development"}`);
+  console.log(`DSS API running. Port ${PORT}. ${process.env["NODE_ENV"] ?? "development"}`);
   console.log(`CORS origins: ${allowedOrigins.join(", ")} + *.vercel.app + *.arcevocirqle.com.ng`);
 });
 

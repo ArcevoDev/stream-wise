@@ -1,7 +1,10 @@
 import type { Request, Response } from "express";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
-import { AcademicStream, Subject } from "@prisma-client";
+import { writeAudit } from "@/services/audit.js";
+import { AcademicLevel, AcademicStream } from "@prisma-client";
+import { validateJambPrerequisites } from "@/engine/index.js";
+import type { Subject } from "@prisma-client";
 import type {
   JambCatalogQueryInput,
   JambValidateInput,
@@ -43,7 +46,9 @@ export const getCatalog = asyncHandler<
 
 /**
  * Validates a student's chosen subjects against a target JAMB course's requirements.
- * Persists results directly into an immutable log matching NFR-01 audit specs.
+ * P0-2c: the compliance math is delegated to the pure engine module
+ * (validateJambPrerequisites); the controller only fetches the versioned
+ * requirements and persists the result.
  */
 export const validateCombination = asyncHandler<
   Request<Record<string, never>, unknown, JambValidateInput>
@@ -63,43 +68,94 @@ export const validateCombination = asyncHandler<
     return;
   }
 
-  // FIXED TS7006: Explicitly typed the structural closure row
+  // Student's REAL career aspiration (spec: validateJambPrerequisites takes careerGoal).
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { careerAspiration: true },
+  });
+
+  // P1-3: source the student's subject combination from their REAL
+  // SubjectScore rows (SS1) when the client does not send an explicit list.
+  // This kills the hardcoded STREAM_SUBJECTS-template loophole. A student
+  // can no longer "pass" validation with subjects they never actually took.
+  let effectiveSubjects: Subject[];
+  if (studentSubjects && studentSubjects.length > 0) {
+    effectiveSubjects = studentSubjects as Subject[];
+  } else {
+    const rows = await prisma.subjectScore.findMany({
+      where: { studentId, level: AcademicLevel.SS1 },
+      orderBy: { subject: "asc" },
+    });
+    if (rows.length === 0) {
+      res.status(400).json({
+        error:
+          "No SS1 subject scores found for this student. Submit your academic scores first, or provide an explicit subject list.",
+      });
+      return;
+    }
+    effectiveSubjects = rows.map((row) => row.subject);
+  }
+
   const required: Subject[] = course.mandatorySubjects.map(
     (subjectRow: { subject: Subject }): Subject => subjectRow.subject
   );
 
-  const normalizedStudentSubjects = studentSubjects as Subject[];
-  const studentSet = new Set<Subject>(normalizedStudentSubjects);
-
-  const missing: Subject[] = required.filter(
-    (subject: Subject) => !studentSet.has(subject)
+  const result = validateJambPrerequisites(
+    course.streamCategory,
+    student?.careerAspiration ?? undefined,
+    {
+      courseId: course.id,
+      courseName: course.courseName,
+      stream: course.streamCategory,
+      mandatorySubjects: required,
+      admissionCycle: course.admissionCycle,
+    },
+    effectiveSubjects
   );
-
-  const isCompliant = missing.length === 0;
 
   const validation = await prisma.jambValidation.create({
     data: {
       studentId,
       jambCourseId: course.id,
       recommendedStream: course.streamCategory,
-      isCompliant,
-      missingSubjects: missing,
-      validationNotes: isCompliant
-        ? `All ${required.length} mandatory subjects satisfied for ${course.courseName}.`
-        : `Missing ${missing.length} of ${required.length} mandatory subjects for ${course.courseName}.`,
+      isCompliant: result.compliant,
+      missingSubjects: result.missingSubjects,
+      validationNotes: result.compliant
+        ? `All ${result.requiredSubjects.length} mandatory subjects satisfied for ${course.courseName}.`
+        : `Missing ${result.missingSubjects.length} of ${result.requiredSubjects.length} mandatory subjects for ${course.courseName}.`,
+    },
+  });
+
+  // P1-2: audit the JAMB validation.
+  await writeAudit(req, {
+    action: "JAMB_VALIDATED",
+    studentId,
+    metadata: {
+      courseId: course.id,
+      courseName: course.courseName,
+      admissionCycle: course.admissionCycle,
+      compliant: result.compliant,
+      coverage: result.coverage,
+      missingSubjects: result.missingSubjects,
+      validationId: validation.id,
+      subjectSource: studentSubjects && studentSubjects.length > 0 ? "client-supplied" : "subject-score-rows",
     },
   });
 
   res.json({
     course: course.courseName,
     stream: course.streamCategory,
-    mandatorySubjects: required,
-    studentSubjects: normalizedStudentSubjects,
-    compliant: isCompliant,
-    missingSubjects: missing,
-    message: isCompliant
+    admissionCycle: course.admissionCycle,
+    mandatorySubjects: result.requiredSubjects,
+    studentSubjects: result.studentSubjects,
+    compliant: result.compliant,
+    coverage: result.coverage,
+    missingSubjects: result.missingSubjects,
+    alignmentNote: result.alignmentNote,
+    subjectSource: studentSubjects && studentSubjects.length > 0 ? "client-supplied" : "subject-score-rows",
+    message: result.compliant
       ? `Your subject combination fully satisfies JAMB requirements for ${course.courseName}.`
-      : `Missing required subjects for ${course.courseName}: ${missing.join(", ")}.`,
+      : `Missing required subjects for ${course.courseName}: ${result.missingSubjects.join(", ")}.`,
     validationId: validation.id,
   });
 });

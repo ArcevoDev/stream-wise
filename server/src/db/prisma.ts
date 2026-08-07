@@ -1,7 +1,7 @@
 // ============================================================================
 // Prisma Client singleton.
 //
-// Prisma 7 removed the implicit "read URL from schema.prisma" behaviour —
+// Prisma 7 removed the implicit "read URL from schema.prisma" behaviour.
 // PrismaClient now REQUIRES an explicit driver adapter, and `new
 // PrismaClient()` with no arguments throws. @prisma/adapter-pg is
 // constructed directly from the connection string; it manages its own
@@ -10,7 +10,7 @@
 // not a pre-built Pool instance).
 //
 // This file is independent of prisma.config.ts, which is read only by the
-// Prisma CLI (migrate/studio/seed) — the running app always wires its own
+// Prisma CLI (migrate/studio/seed). The running app always wires its own
 // connection here, reading the same DATABASE_URL from .env.
 // ============================================================================
 

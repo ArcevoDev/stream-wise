@@ -1,4 +1,4 @@
-{
+ {
   "name": "server",
   "version": "1.0.0",
   "private": true,
@@ -8,6 +8,8 @@
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && node scripts/fix-prisma-imports.js",
     "start": "node ./dist/src/app.js",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate",
     "prisma:format": "prisma format",
     "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
@@ -17,6 +19,7 @@
     "prisma:run": "npx prisma validate && pnpm prisma:format && pnpm prisma:generate && pnpm prisma:migrate",
     "seed": "tsx prisma/seed.ts",
     "create:admin": "tsx scripts/create-admin.ts",
+    "seed:roles": "tsx scripts/seed-roles.ts",
     "typecheck:watch": "tsc --noEmit --watch",
     "lint": "eslint . --ext .ts"
   },
@@ -48,6 +51,7 @@
     "prisma": "^7.8.0",
     "tsc-alias": "^1.8.10",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
   }
 }

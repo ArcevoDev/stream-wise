@@ -1,5 +1,5 @@
 /**
- * BFI-20 ENGINE — Big Five Inventory (short form)
+ * BFI-20 ENGINE. Big Five Inventory (short form)
  * ----------------------------------------
  * 20-item questionnaire (4 items per trait): Openness, Conscientiousness,
  * Extraversion, Agreeableness, Neuroticism. Thesis §3.5.3 specifies a
@@ -11,12 +11,13 @@
  * standard BFI scoring convention (John & Srivastava, 1999).
  *
  * Stream mapping used downstream by the SAW engine (thesis §3.5.3):
- *   Science    draws on Openness + Conscientiousness
- *   Humanities draws on Openness + Agreeableness
- *   Business   draws on Extraversion + Conscientiousness
- * Neuroticism is retained for completeness/counsellor insight but is not
- * used as a positive driver of any stream (high neuroticism has no
- * established positive direction toward a specific stream).
+ *   Science    draws on Openness + Conscientiousness + Emotional Stability
+ *   Humanities draws on Openness + Agreeableness + Emotional Stability
+ *   Business   draws on Extraversion + Conscientiousness + Emotional Stability
+ * P0-3e: Neuroticism is now a first-class 5-factor input. Inverted as
+ * Emotional Stability (100 − neuroticism) and used as a positive driver for
+ * every stream (capacity to sustain a demanding workload, §2.3.4). It is no
+ * longer "retained for counsellor insight only".
  */
 
 import type { BfiQuestion, BfiScores, BfiTrait } from "@/types/domain.js";
@@ -87,5 +88,8 @@ export function computeBFI(responses: number[]): BfiScores {
     extraversionScore: normalised.E,
     agreeablenessScore: normalised.A,
     neuroticismScore: normalised.N,
+    // P0-3e: derived 5-factor input. The inverse of neuroticism, used by the
+    // SAW personality criterion as a positive driver for every stream.
+    emotionalStabilityScore: parseFloat((100 - normalised.N).toFixed(1)),
   };
 }

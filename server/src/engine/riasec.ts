@@ -79,10 +79,31 @@ export const RIASEC_QUESTIONS: RiasecQuestion[] = [
 const TYPES: RiasecLetter[] = ["R", "I", "A", "S", "E", "C"];
 
 /**
+ * P0-1e: RIASEC→stream affinity mapping (thesis §3.5.3) as a versioned
+ * config, not a literal baked into the scoring loop. Each stream is a
+ * [primary, secondary] Holland-type pair with 60/40 weights.
+ */
+export interface RiasecStreamMapping {
+  science: { primary: RiasecLetter; secondary: RiasecLetter; primaryWeight: number };
+  humanities: { primary: RiasecLetter; secondary: RiasecLetter; primaryWeight: number };
+  business: { primary: RiasecLetter; secondary: RiasecLetter; primaryWeight: number };
+}
+
+export const DEFAULT_RIASEC_STREAM_MAPPING: RiasecStreamMapping = {
+  science: { primary: "I", secondary: "R", primaryWeight: 0.6 },
+  humanities: { primary: "A", secondary: "S", primaryWeight: 0.6 },
+  business: { primary: "E", secondary: "C", primaryWeight: 0.6 },
+};
+
+/**
  * Compute RIASEC sub-scores from 48 responses.
  * @param responses - array of 48 values, each 1-5 (Likert scale), in question-id order (1..48)
+ * @param mapping   - versioned RIASEC→stream affinity config (defaults to thesis §3.5.3)
  */
-export function computeRIASEC(responses: number[]): RiasecScores {
+export function computeRIASEC(
+  responses: number[],
+  mapping: RiasecStreamMapping = DEFAULT_RIASEC_STREAM_MAPPING
+): RiasecScores {
   if (responses.length !== 48) {
     throw new Error(`Expected 48 responses, received ${responses.length}`);
   }
@@ -103,10 +124,13 @@ export function computeRIASEC(responses: number[]): RiasecScores {
   const sorted = [...TYPES].sort((a, b) => scores[b] - scores[a]);
   const summaryCode = sorted.slice(0, 3).join("");
 
-  // Stream affinity scores (0-100)
-  const scienceAffinity = parseFloat((scores.I * 0.6 + scores.R * 0.4).toFixed(1));
-  const humanitiesAffinity = parseFloat((scores.A * 0.6 + scores.S * 0.4).toFixed(1));
-  const businessAffinity = parseFloat((scores.E * 0.6 + scores.C * 0.4).toFixed(1));
+  // Stream affinity scores (0-100) from the versioned mapping config.
+  const affinity = (cfg: { primary: RiasecLetter; secondary: RiasecLetter; primaryWeight: number }): number =>
+    parseFloat((scores[cfg.primary] * cfg.primaryWeight + scores[cfg.secondary] * (1 - cfg.primaryWeight)).toFixed(1));
+
+  const scienceAffinity = affinity(mapping.science);
+  const humanitiesAffinity = affinity(mapping.humanities);
+  const businessAffinity = affinity(mapping.business);
 
   return {
     rScore: scores.R,

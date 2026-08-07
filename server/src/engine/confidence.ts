@@ -3,9 +3,101 @@
  * ----------------------------------------
  * Generates plain-language explanation of the DSS recommendation.
  * Maps top stream + RIASEC Summary Code to human-readable guidance.
+ *
+ * P0-3c. CONFIDENCE RESCALING ("why 50 minimum"): the raw confidence level
+ * is the top stream's share of total SAW score (rawCL ∈ [1/3, 1] for three
+ * streams. 1/3 is the "all equal" baseline). For display we min-max rescale
+ * rawCL to [0.50, 1.00] so a displayed percentage is always interpretable:
+ * the 1/3 baseline (perfect tie) maps to 50%, and a dominant profile maps
+ * toward 100%. 50 is therefore a documented DISPLAY anchor, not a magic
+ * number. It represents "no better than a coin flip between the three
+ * streams." The UI should surface this as "confidence is relative to the
+ * three-stream baseline."
  */
 
 import type { RiasecLetter, SawResult, Stream } from "@/types/domain.js";
+
+/**
+ * P0-2d: per-criterion contribution breakdown for a stream.
+ * Each entry is the absolute weighted contribution of one criterion to the
+ * stream's SAW score (weight × normalised sub-score), which lets the UI and
+ * audit trail show WHY a stream ranked where it did.
+ */
+export interface CriterionContribution {
+  criterion: "Academic" | "RIASEC" | "Personality";
+  weight: number;
+  normalised: number;
+  /** weight × normalised. This criterion's contribution to the stream score. */
+  contribution: number;
+}
+
+export interface StreamContribution {
+  stream: Stream;
+  score: number;
+  contributions: CriterionContribution[];
+}
+
+/**
+ * Compute the per-criterion contribution breakdown for every stream.
+ * Feeds `guidanceInsight` and the explainability snapshot (P0-2d).
+ *
+ * The SAW engine uses unit weights on normalised inputs (see computeSAW), so
+ * a criterion's contribution to a stream score IS its normalised sub-score.
+ * This breakdown surfaces the raw normalised values plus the weighted
+ * contribution for display, and stays in sync with the engine's math.
+ */
+export function explainRecommendation(
+  sawResult: SawResult,
+  weights?: [number, number, number]
+): StreamContribution[] {
+  const n = sawResult.normalised;
+
+  const perStream = (stream: Stream): { criterion: CriterionContribution["criterion"]; normalised: number }[] => {
+    switch (stream) {
+      case "Science":
+        return [
+          { criterion: "Academic", normalised: n.academicScience },
+          { criterion: "RIASEC", normalised: n.riasecScience },
+          { criterion: "Personality", normalised: n.personalityScience },
+        ];
+      case "Humanities":
+        return [
+          { criterion: "Academic", normalised: n.academicHumanities },
+          { criterion: "RIASEC", normalised: n.riasecHumanities },
+          { criterion: "Personality", normalised: n.personalityHumanities },
+        ];
+      case "Business":
+        return [
+          { criterion: "Academic", normalised: n.academicBusiness },
+          { criterion: "RIASEC", normalised: n.riasecBusiness },
+          { criterion: "Personality", normalised: n.personalityBusiness },
+        ];
+    }
+  };
+
+  const weightFor = (criterion: CriterionContribution["criterion"]): number => {
+    if (!weights) return 1; // unit weights. Normalised value IS the contribution
+    const idx = criterion === "Academic" ? 0 : criterion === "RIASEC" ? 1 : 2;
+    return weights[idx]!;
+  };
+
+  return sawResult.ranked.map((s) => {
+    const rows = perStream(s.stream);
+    return {
+      stream: s.stream,
+      score: s.score,
+      contributions: rows.map((r) => {
+        const weight = weightFor(r.criterion);
+        return {
+          criterion: r.criterion,
+          weight,
+          normalised: r.normalised,
+          contribution: parseFloat((r.normalised * weight).toFixed(4)),
+        };
+      }),
+    };
+  });
+}
 
 interface StreamDescription {
   subjects: string;

@@ -14,7 +14,7 @@ const IGNORED_ITEMS = new Set([
   "generated",
   "dist",
   "repo_structure.txt",
-  "dss_project_codebase_snapshot.txt",
+  "stream_wise_codebase_snapshot.txt",
   "scripts",
   "gen-structure",
   "pnpm-lock.yaml",
@@ -130,10 +130,10 @@ const visualTree = `${path.basename(rootDir)}/\n${generateTree(rootDir)}`;
 const fileContentsDump = extractContents(rootDir, rootDir);
 
 fs.writeFileSync(
-  "dss_project_codebase_snapshot.txt",
+  "stream_wise_codebase_snapshot.txt",
   `=== STRUCTURE ===\n${visualTree}\n=== CONTENTS ===\n${fileContentsDump}`,
   "utf-8",
 );
 console.log(
-  "✨ Success! Structure and all contents written to dss_project_codebase_snapshot.txt",
+  "✨ Success! Structure and all contents written to stream_wise_codebase_snapshot.txt",
 );

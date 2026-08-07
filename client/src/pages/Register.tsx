@@ -2,14 +2,10 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { getApiErrorMessage } from "@/api/errors";
-import type { Gender } from "@/types/index";
-import { User, Mail, Lock, Calendar, School, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Gender, ConsentPayload } from "@/types/index";
+import { User, Mail, Lock, Calendar, School, ArrowRight, AlertCircle, Loader2, BarChart3, ShieldCheck } from "lucide-react";
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription } from "@arcevo/facet-components";
+import { Alert, AlertDescription } from "@/components/Alert";
 
 interface RegisterForm {
   fullName: string;
@@ -18,11 +14,14 @@ interface RegisterForm {
   confirmPassword: string;
   gender: "" | Gender;
   schoolName: string;
+  careerAspiration: string;
   dateOfBirth: string;
 }
 
+const INPUT_CLASS = "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 export default function Register() {
-  const { register } = useAuth();
+  const { register, consent } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState<RegisterForm>({
@@ -32,6 +31,7 @@ export default function Register() {
     confirmPassword: "",
     gender: "",
     schoolName: "",
+    careerAspiration: "",
     dateOfBirth: "",
   });
   const [error, setError] = useState("");
@@ -60,11 +60,27 @@ export default function Register() {
         email: form.email,
         password: form.password,
         gender: (form.gender as Gender) || undefined,
-        // FIX (Bug 2.1): schoolName now accepted by server registerSchema
         schoolName: form.schoolName || undefined,
+        careerAspiration: form.careerAspiration || undefined,
         dateOfBirth: form.dateOfBirth ? new Date(form.dateOfBirth).toISOString() : undefined,
       });
-      navigate("/scores");
+
+      // Consent intent comes from the consent-first landing page. If the user
+      // went straight to register (e.g. deep link), they are routed to /consent
+      // after sign-up so the ethics gate is never bypassed.
+      const pendingRaw = sessionStorage.getItem("dss_pending_consent");
+      if (pendingRaw) {
+        try {
+          const pending = JSON.parse(pendingRaw) as ConsentPayload;
+          await consent(pending);
+          sessionStorage.removeItem("dss_pending_consent");
+          navigate("/scores");
+          return;
+        } catch {
+          /* consent will be re-prompted at /consent */
+        }
+      }
+      navigate("/consent");
     } catch (err) {
       setError(getApiErrorMessage(err, "Registration failed. Please try again."));
     } finally {
@@ -73,14 +89,14 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-gray-900">Create Your Account</h1>
-          <p className="text-gray-500 text-sm mt-1">Start your subject combination assessment</p>
+          <h1 className="text-2xl font-black text-foreground">Create Your Account</h1>
+          <p className="text-muted-foreground text-sm mt-1">Start your subject combination assessment</p>
         </div>
 
-        <Card>
+        <Card variant="glass" className="rounded-2xl border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Personal details</CardTitle>
             <CardDescription>All fields except school name are required</CardDescription>
@@ -93,7 +109,7 @@ export default function Register() {
                 <div className="relative">
                   <User
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                   />
                   <Input
                     id="fullName"
@@ -114,7 +130,7 @@ export default function Register() {
                 <div className="relative">
                   <Mail
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                   />
                   <Input
                     id="reg-email"
@@ -137,7 +153,7 @@ export default function Register() {
                   <div className="relative">
                     <Lock
                       size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                     />
                     <Input
                       id="password"
@@ -157,7 +173,7 @@ export default function Register() {
                   <div className="relative">
                     <Lock
                       size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                     />
                     <Input
                       id="confirmPassword"
@@ -178,19 +194,19 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="gender">Gender</Label>
-                  <Select id="gender" name="gender" value={form.gender} onChange={handleChange}>
+                  <select id="gender" name="gender" value={form.gender} onChange={handleChange} className={INPUT_CLASS}>
                     <option value="">Select…</option>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
                     <option value="UNSPECIFIED">Prefer not to say</option>
-                  </Select>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
                   <div className="relative">
                     <Calendar
                       size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                     />
                     <Input
                       id="dateOfBirth"
@@ -209,12 +225,12 @@ export default function Register() {
               <div>
                 <Label htmlFor="schoolName">
                   School Name{" "}
-                  <span className="text-gray-400 font-normal">(optional)</span>
+                  <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
                   <School
                     size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                   />
                   <Input
                     id="schoolName"
@@ -226,6 +242,40 @@ export default function Register() {
                     autoComplete="organization"
                   />
                 </div>
+              </div>
+
+              {/* P0-4b: career aspiration. Feeds the JAMB validator */}
+              <div>
+                <Label htmlFor="careerAspiration">
+                  Career Aspiration{" "}
+                  <span className="text-muted-foreground font-normal">(optional)</span>
+                </Label>
+                <div className="relative">
+                  <BarChart3
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+                  />
+                  <Input
+                    id="careerAspiration"
+                    className="pl-9"
+                    name="careerAspiration"
+                    placeholder="e.g. Medicine and Surgery, Law, Accounting"
+                    value={form.careerAspiration}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              {/* Consent link-out. The ethics gate lives on the landing page */}
+              <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-start gap-2">
+                <ShieldCheck size={14} className="shrink-0 mt-0.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  You&apos;ll be asked to review and agree to the{" "}
+                  <Link to="/" className="font-semibold text-primary hover:underline">
+                    informed consent
+                  </Link>{" "}
+                  points before your assessment begins.
+                </p>
               </div>
 
               {error && (
@@ -250,9 +300,9 @@ export default function Register() {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-gray-500 mt-6">
+            <p className="text-center text-sm text-muted-foreground mt-6">
               Already have an account?{" "}
-              <Link to="/login" className="text-brand-500 font-semibold hover:underline">
+              <Link to="/login" className="text-primary font-semibold hover:underline">
                 Log in
               </Link>
             </p>

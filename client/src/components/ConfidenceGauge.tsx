@@ -10,18 +10,18 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
   const isHigh = clamped >= 80;
   const isMid = clamped >= 65;
 
-  const color = isHigh ? "text-emerald-600" : isMid ? "text-amber-500" : "text-red-500";
+  const color = isHigh ? "text-success" : isMid ? "text-warning" : "text-destructive";
   const bgColor = isHigh
-    ? "bg-emerald-50 border-emerald-200"
+    ? "bg-success/10 border-success/30"
     : isMid
-      ? "bg-amber-50 border-amber-200"
-      : "bg-red-50 border-red-200";
+      ? "bg-warning/10 border-warning/30"
+      : "bg-destructive/10 border-destructive/30";
   const strokeColor = isHigh ? "#10B981" : isMid ? "#F59E0B" : "#EF4444";
   const textFill = isHigh ? "#059669" : isMid ? "#D97706" : "#DC2626";
   const label = isHigh ? "High Confidence" : isMid ? "Moderate Confidence" : "Low Confidence";
   const Icon = isHigh ? TrendingUp : isMid ? Minus : TrendingDown;
 
-  // SVG arc gauge — half-circle
+  // SVG arc gauge. Half-circle
   const r = 54;
   const cx = 70;
   const cy = 70;
@@ -31,20 +31,20 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
 
   return (
     <div
-      className={`card border-2 ${bgColor} flex flex-col items-center`}
+      className={`rounded-2xl border-2 ${bgColor} bg-card flex flex-col items-center p-6`}
       role="meter"
       aria-valuenow={clamped}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-label={`Confidence Level: ${clamped.toFixed(1)}% — ${label}`}
+      aria-label={`Confidence Level: ${clamped.toFixed(1)}%, ${label}`}
     >
-      <p className="text-sm font-semibold text-gray-600 mb-2">Confidence Level</p>
+      <p className="text-sm font-semibold text-muted-foreground mb-2">Confidence Level</p>
       <svg viewBox="0 0 140 80" className="w-44 h-24" aria-hidden="true">
         {/* Background arc */}
         <path
           d={`M ${cx - r},${cy} A ${r},${r} 0 0 1 ${cx + r},${cy}`}
           fill="none"
-          stroke="#E5E7EB"
+          stroke="var(--border)"
           strokeWidth="12"
           strokeLinecap="round"
         />

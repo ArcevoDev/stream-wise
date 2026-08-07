@@ -4,7 +4,8 @@ import type { Request, Response } from "express";
 import { Gender, SSLevel, type UserRole } from "@prisma-client";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
-import type { LoginInput, RegisterInput } from "@/validators/schemas.js";
+import { writeAudit } from "@/services/audit.js";
+import type { ConsentInput, LoginInput, RegisterInput } from "@/validators/schemas.js";
 
 interface TokenSubject {
   id: string;
@@ -47,16 +48,15 @@ export const register = asyncHandler<Request<Record<string, never>, unknown, Reg
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    // FIX (Bug 2.1): schoolName has no direct column on Student (it links via
-    // schoolId FK for a School entity). For now we store it as a prefixed note
-    // in careerAspiration so the information is not lost. If the student also
-    // supplies careerAspiration, we concatenate both values.
-    const resolvedCareerAspiration = [
-      schoolName ? `[School: ${schoolName}]` : null,
-      careerAspiration ?? null,
-    ]
-      .filter(Boolean)
-      .join(" — ") || undefined;
+    // schoolName gets a real School row linked via the schoolId FK, so it
+    // never pollutes careerAspiration (which feeds the JAMB validator).
+    let schoolId: string | null = null;
+    if (schoolName?.trim()) {
+      const trimmed = schoolName.trim();
+      const existing = await prisma.school.findFirst({ where: { name: trimmed } });
+      const school = existing ?? (await prisma.school.create({ data: { name: trimmed } }));
+      schoolId = school.id;
+    }
 
     const student = await prisma.student.create({
       data: {
@@ -66,8 +66,9 @@ export const register = asyncHandler<Request<Record<string, never>, unknown, Reg
         gender: gender ? Gender[gender as keyof typeof Gender] : Gender.UNSPECIFIED,
         ssLevel: ssLevel ? SSLevel[ssLevel as keyof typeof SSLevel] : SSLevel.SS2,
         phoneNumber: phoneNumber ?? null,
-        careerAspiration: resolvedCareerAspiration ?? null,
+        careerAspiration: careerAspiration?.trim() || null,
         dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
+        schoolId,
       },
     });
 
@@ -95,18 +96,22 @@ export const login = asyncHandler<Request<Record<string, never>, unknown, LoginI
       return;
     }
 
-    // FIX (Bug 2.5): update lastLoginAt on every successful login
+    // P1-2: update lastLoginAt on every successful login
     await prisma.student.update({
       where: { id: student.id },
       data: { lastLoginAt: new Date() },
     });
+
+    // P1-2: audit the successful login (best-effort, never breaks the response).
+    await writeAudit(req, { action: "LOGIN", studentId: student.id });
 
     const token = signToken(student);
     res.json({ token, student: { id: student.id, fullName: student.fullName, email: student.email, role: student.role } });
   }
 );
 
-export const getMe = asyncHandler(async (req: Request, res: Response) => {
+/** GET /api/auth/profile — the signed-in user's identity + consent status. */
+export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const student = await prisma.student.findUnique({
     where: { id: req.student!.id },
     select: {
@@ -120,6 +125,9 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
       role: true,
       schoolId: true,
       counselorId: true,
+      consentStatus: true,
+      consentVersion: true,
+      consentGrantedAt: true,
       createdAt: true,
     },
   });
@@ -127,5 +135,45 @@ export const getMe = asyncHandler(async (req: Request, res: Response) => {
     res.status(404).json({ error: "Student not found" });
     return;
   }
-  res.json({ student });
+
+  // P0-4a: the client gates the assessment flow on consent. Expose the
+  // derived flag so the router can redirect to /consent in one place
+  // instead of re-deriving the rule per page.
+  const consentRequired = student.consentStatus !== "granted";
+
+  res.json({ student, consentRequired });
 });
+
+/**
+ * POST /api/auth/consent. P0-4a consent recording (ethics requirement).
+ * All four consent points must be true to record consent as "granted";
+ * anything less is recorded as "withdrawn" so the assessment flow can
+ * re-prompt. The consentVersion pins which wording the student agreed to.
+ */
+export const recordConsent = asyncHandler<Request<Record<string, never>, unknown, ConsentInput>>(
+  async (req, res: Response) => {
+    const studentId = req.student!.id;
+    const { consentPoint1, consentPoint2, consentPoint3, consentPoint4, consentVersion } = req.body;
+
+    const allGranted = consentPoint1 && consentPoint2 && consentPoint3 && consentPoint4;
+
+    const student = await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        consentPoint1,
+        consentPoint2,
+        consentPoint3,
+        consentPoint4,
+        consentVersion,
+        consentStatus: allGranted ? "granted" : "withdrawn",
+        consentGrantedAt: allGranted ? new Date() : null,
+      },
+    });
+
+    res.json({
+      consentStatus: student.consentStatus,
+      consentVersion: student.consentVersion,
+      consentGrantedAt: student.consentGrantedAt,
+    });
+  }
+);

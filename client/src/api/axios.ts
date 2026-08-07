@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from "axios";
+import { toast } from "sonner";
 
 /**
  * BASE URL LOGIC
@@ -28,15 +29,40 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+/**
+ * AuthContext registers this so a 401/403 can reset React state
+ * (token + student) instead of relying on a hard window.location reload,
+ * which leaves the app in a broken "logged in" state (roadmap item 4).
+ */
+let onAuthCleared: (() => void) | null = null;
+export function registerAuthClearHandler(handler: () => void): void {
+  onAuthCleared = handler;
+}
+
 // Global response error handling
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status;
+
+    // 401 = no/invalid token, 403 = expired token or missing role.
+    // Both mean the session is unusable. Clear it and send the user to login.
+    if (status === 401 || status === 403) {
       localStorage.removeItem("dss_token");
       localStorage.removeItem("dss_student");
-      window.location.href = "/login";
+      onAuthCleared?.();
+      if (!window.location.pathname.startsWith("/login")) {
+        window.location.replace("/login");
+      }
     }
+
+    // 429 = server rate limit (auth: 20/15min, api: 200/5min). Stay logged in.
+    if (status === 429) {
+      toast.error("Too many requests", {
+        description: "Please wait a moment and try again.",
+      });
+    }
+
     return Promise.reject(err);
   }
 );

@@ -9,8 +9,6 @@ import {
   Gender,
   SSLevel,
   AcademicStream,
-  RiasecType,
-  PersonalityTrait,
   AcademicLevel,
   Subject,
 } from "@prisma-client";
@@ -19,8 +17,6 @@ import {
 const genderEnum = z.enum(Object.values(Gender) as [string, ...string[]]);
 const ssLevelEnum = z.enum(Object.values(SSLevel) as [string, ...string[]]);
 const academicStreamEnum = z.enum(Object.values(AcademicStream) as [string, ...string[]]);
-const riasecTypeEnum = z.enum(Object.values(RiasecType) as [string, ...string[]]);
-const personalityTraitEnum = z.enum(Object.values(PersonalityTrait) as [string, ...string[]]);
 const academicLevelEnum = z.enum(Object.values(AcademicLevel) as [string, ...string[]]);
 const subjectEnum = z.enum(Object.values(Subject) as [string, ...string[]]);
 
@@ -34,11 +30,8 @@ export const registerSchema = z.object({
   ssLevel: ssLevelEnum.optional(),
   phoneNumber: z.string().trim().optional(),
   careerAspiration: z.string().trim().optional(),
-  // FIX (Bug 2.1): schoolName is accepted from the client form. The Student
-  // model has no direct schoolName column (it uses a schoolId FK), so we
-  // store it as a prefixed careerAspiration note if the field is present
-  // and careerAspiration is not separately supplied. The controller handles
-  // the merge logic. This way the field is not silently stripped by Zod.
+  // schoolName is accepted from the client form and linked via the schoolId FK
+  // (create-or-find a School row). The field stays optional.
   schoolName: z.string().trim().max(200).optional(),
   dateOfBirth: z
     .string()
@@ -51,6 +44,21 @@ export const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email("Invalid email address"),
   password: z.string().min(1, "Password is required"),
 });
+
+// ── CONSENT (P0-4a, ethics/landing-page spec) ───────────────────────────────
+// The landing page lists 4 consent points. Consent is recorded as four
+// booleans + a version string so future wording changes don't invalidate
+// historical records (same versioning principle as the instrument catalogs).
+
+export const consentSchema = z.object({
+  consentPoint1: z.boolean(),
+  consentPoint2: z.boolean(),
+  consentPoint3: z.boolean(),
+  consentPoint4: z.boolean(),
+  consentVersion: z.string().default("consent-v1"),
+});
+
+export type ConsentInput = z.infer<typeof consentSchema>;
 
 // ── ACADEMIC PROFILE (FR-02) ──────────────────────────────────────────────
 
@@ -99,9 +107,16 @@ export const bfiSubmitSchema = z.object({
 
 export const jambValidateSchema = z.object({
   jambCourseId: z.string().uuid("jambCourseId must be a valid course id"),
+  // P1-3: studentSubjects is OPTIONAL. The server looks up the student's real
+  // SubjectScore rows (level = SS1) as the primary source of truth; the
+  // client no longer sends hardcoded STREAM_SUBJECTS templates that a student
+  // could "pass" with subjects they never took. The field is kept for
+  // backwards compatibility (counselor/admin flows may still pass an explicit
+  // combination).
   studentSubjects: z
     .array(subjectEnum)
-    .min(1, "studentSubjects must be a non-empty array of Subject enum values"),
+    .min(1, "studentSubjects must be a non-empty array of Subject enum values")
+    .optional(),
 });
 
 export const jambCatalogQuerySchema = z.object({
@@ -125,6 +140,13 @@ export const adminAuditQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
+// ── RECOMMENDATION HISTORY (P1-6: pagination) ─────────────────────────────
+
+export const recommendHistoryQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(10),
+});
+
 // ── Inferred types ────────────────────────────────────────────────────────
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -136,13 +158,12 @@ export type JambValidateInput = z.infer<typeof jambValidateSchema>;
 export type JambCatalogQueryInput = z.infer<typeof jambCatalogQuerySchema>;
 export type AdminStudentsQuery = z.infer<typeof adminStudentsQuerySchema>;
 export type AdminAuditQuery = z.infer<typeof adminAuditQuerySchema>;
+export type RecommendHistoryQuery = z.infer<typeof recommendHistoryQuerySchema>;
 
 export {
   genderEnum,
   ssLevelEnum,
   academicStreamEnum,
-  riasecTypeEnum,
-  personalityTraitEnum,
   academicLevelEnum,
   subjectEnum,
 };

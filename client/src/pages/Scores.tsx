@@ -1,15 +1,12 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api";
 import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
 import { ClipboardList, ArrowRight, AlertCircle, BarChart3, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, Input, Label, Card, CardContent } from "@arcevo/facet-components";
+import { Alert, AlertDescription } from "@/components/Alert";
 import { Subject, AcademicLevel, AcademicStream } from "server/enums";
 
 interface SubjectField {
@@ -19,29 +16,29 @@ interface SubjectField {
   formKey: string;
 }
 
-// Compulsory NERDC core — every student, every stream.
+// Compulsory NERDC core. Every student, every stream.
 const CORE_FIELDS: SubjectField[] = [
-  { subject: Subject.ENGLISH_LANGUAGE, label: "SS1 English Language", hint: "Your SS1 English Language score (0–100)", formKey: "ss1English" },
-  { subject: Subject.MATHEMATICS, label: "SS1 Mathematics", hint: "Your SS1 Mathematics score (0–100)", formKey: "ss1Mathematics" },
+  { subject: Subject.ENGLISH_LANGUAGE, label: "SS1 English Language", hint: "Your SS1 English Language score (0-100)", formKey: "ss1English" },
+  { subject: Subject.MATHEMATICS, label: "SS1 Mathematics", hint: "Your SS1 Mathematics score (0-100)", formKey: "ss1Mathematics" },
 ];
 
-// Stream-specific SS1 subjects — matches the groupings documented directly
+// Stream-specific SS1 subjects. Matches the groupings documented directly
 // on the AcademicStream enum in schema.prisma.
 const STREAM_FIELDS: Record<AcademicStream, SubjectField[]> = {
   [AcademicStream.SCIENCE]: [
-    { subject: Subject.BIOLOGY, label: "SS1 Biology", hint: "Your SS1 Biology score (0–100)", formKey: "ss1Biology" },
-    { subject: Subject.CHEMISTRY, label: "SS1 Chemistry", hint: "Your SS1 Chemistry score (0–100)", formKey: "ss1Chemistry" },
-    { subject: Subject.PHYSICS, label: "SS1 Physics", hint: "Your SS1 Physics score (0–100)", formKey: "ss1Physics" },
+    { subject: Subject.BIOLOGY, label: "SS1 Biology", hint: "Your SS1 Biology score (0-100)", formKey: "ss1Biology" },
+    { subject: Subject.CHEMISTRY, label: "SS1 Chemistry", hint: "Your SS1 Chemistry score (0-100)", formKey: "ss1Chemistry" },
+    { subject: Subject.PHYSICS, label: "SS1 Physics", hint: "Your SS1 Physics score (0-100)", formKey: "ss1Physics" },
   ],
   [AcademicStream.HUMANITIES]: [
-    { subject: Subject.LITERATURE_IN_ENGLISH, label: "SS1 Literature in English", hint: "Your SS1 Literature score (0–100)", formKey: "ss1Literature" },
-    { subject: Subject.GOVERNMENT, label: "SS1 Government", hint: "Your SS1 Government score (0–100)", formKey: "ss1Government" },
-    { subject: Subject.HISTORY, label: "SS1 History", hint: "Your SS1 History score (0–100)", formKey: "ss1History" },
+    { subject: Subject.LITERATURE_IN_ENGLISH, label: "SS1 Literature in English", hint: "Your SS1 Literature score (0-100)", formKey: "ss1Literature" },
+    { subject: Subject.GOVERNMENT, label: "SS1 Government", hint: "Your SS1 Government score (0-100)", formKey: "ss1Government" },
+    { subject: Subject.HISTORY, label: "SS1 History", hint: "Your SS1 History score (0-100)", formKey: "ss1History" },
   ],
   [AcademicStream.BUSINESS]: [
-    { subject: Subject.ECONOMICS, label: "SS1 Economics", hint: "Your SS1 Economics score (0–100)", formKey: "ss1Economics" },
-    { subject: Subject.COMMERCE, label: "SS1 Commerce", hint: "Your SS1 Commerce score (0–100)", formKey: "ss1Commerce" },
-    { subject: Subject.FINANCIAL_ACCOUNTING, label: "SS1 Financial Accounting", hint: "Your SS1 Financial Accounting score (0–100)", formKey: "ss1FinancialAccounting" },
+    { subject: Subject.ECONOMICS, label: "SS1 Economics", hint: "Your SS1 Economics score (0-100)", formKey: "ss1Economics" },
+    { subject: Subject.COMMERCE, label: "SS1 Commerce", hint: "Your SS1 Commerce score (0-100)", formKey: "ss1Commerce" },
+    { subject: Subject.FINANCIAL_ACCOUNTING, label: "SS1 Financial Accounting", hint: "Your SS1 Financial Accounting score (0-100)", formKey: "ss1FinancialAccounting" },
   ],
 };
 
@@ -50,6 +47,8 @@ const STREAM_LABELS: Record<AcademicStream, string> = {
   [AcademicStream.HUMANITIES]: "Humanities (Arts)",
   [AcademicStream.BUSINESS]: "Business / Commercial",
 };
+
+const SELECT_CLASS = "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 type ScoresForm = Record<string, string> & { jss3Average: string };
 
@@ -60,10 +59,42 @@ const EMPTY_FORM: ScoresForm = {
 
 export default function Scores() {
   const navigate = useNavigate();
+  const [checkingConsent, setCheckingConsent] = useState(true);
   const [currentStream, setCurrentStream] = useState<AcademicStream | "">("");
   const [scores, setScores] = useState<ScoresForm>(EMPTY_FORM);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // P0-4a: the assessment flow gates on informed consent. A student with no
+  // "granted" record is routed to /consent before they can enter scores.
+  useEffect(() => {
+    let active = true;
+    api
+      .get("/auth/profile")
+      .then(({ data }) => {
+        if (!active) return;
+        if (data.student?.consentStatus !== "granted") {
+          navigate("/consent", { replace: true });
+        }
+      })
+      .catch(() => {
+        /* interceptor handles 401/403 */
+      })
+      .finally(() => {
+        if (active) setCheckingConsent(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
+  if (checkingConsent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={20} className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const activeFields: SubjectField[] = currentStream
     ? [...CORE_FIELDS, ...STREAM_FIELDS[currentStream]]
@@ -135,23 +166,23 @@ export default function Scores() {
   const totalFields = activeFields.length + 1;
   const weightedNum = parseFloat(weighted);
   const previewColor =
-    weightedNum >= 70 ? "text-emerald-600" : weightedNum >= 50 ? "text-amber-500" : "text-brand-600";
+    weightedNum >= 70 ? "text-success" : weightedNum >= 50 ? "text-warning" : "text-primary";
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-gray-50 py-10 px-4">
+    <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-xl mx-auto">
         <ProgressBar step={1} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
 
         <div className="mt-8">
-          <Card>
+          <Card variant="glass" className="rounded-2xl border-border/60">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-6">
-                <span className="step-badge">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
                   <ClipboardList size={14} />
                 </span>
                 <div>
-                  <h2 className="font-black text-gray-900 text-lg">Academic Score Entry</h2>
-                  <p className="text-xs text-gray-500">
+                  <h2 className="font-black text-foreground text-lg">Academic Score Entry</h2>
+                  <p className="text-xs text-muted-foreground">
                     Enter your most recent JSS3 average and SS1 subject scores
                   </p>
                 </div>
@@ -163,7 +194,7 @@ export default function Scores() {
                   <select
                     id="currentStream"
                     name="currentStream"
-                    className="flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm"
+                    className={SELECT_CLASS}
                     value={currentStream}
                     onChange={handleStreamChange}
                     required
@@ -177,12 +208,12 @@ export default function Scores() {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-400 mt-1">
-                    The stream you're currently placed in — this determines which SS1 subjects we ask for below.
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The stream you're currently placed in. This determines which SS1 subjects we ask for below.
                   </p>
                 </div>
 
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-2">
                   Junior Secondary (JSS3)
                 </p>
 
@@ -195,22 +226,22 @@ export default function Scores() {
                     min={0}
                     max={100}
                     step={0.1}
-                    placeholder="0 – 100"
+                    placeholder="0 - 100"
                     value={scores.jss3Average}
                     onChange={handleChange}
                     required
                   />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Your final JSS3 cumulative average across all subjects (0–100)
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Your final JSS3 cumulative average across all subjects (0-100)
                   </p>
                 </div>
 
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-4">
                   Senior Secondary Year 1 (SS1)
                 </p>
 
                 {!currentStream && (
-                  <p className="text-xs text-gray-400 italic">Select your stream above to see your subjects.</p>
+                  <p className="text-xs text-muted-foreground italic">Select your stream above to see your subjects.</p>
                 )}
 
                 {activeFields.map((f) => (
@@ -223,24 +254,24 @@ export default function Scores() {
                       min={0}
                       max={100}
                       step={0.1}
-                      placeholder="0 – 100"
+                      placeholder="0 - 100"
                       value={scores[f.formKey] ?? ""}
                       onChange={handleChange}
                       required
                     />
-                    <p className="text-xs text-gray-400 mt-1">{f.hint}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{f.hint}</p>
                   </div>
                 ))}
 
-                <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 mt-2 flex items-center gap-3">
-                  <BarChart3 size={28} className="text-brand-500 shrink-0" />
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mt-2 flex items-center gap-3">
+                  <BarChart3 size={28} className="text-primary shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-500">Weighted Academic Score Preview</p>
+                    <p className="text-xs text-muted-foreground">Weighted Academic Score Preview</p>
                     <p className={`text-2xl font-black ${previewColor}`}>
                       {weighted}
-                      <span className="text-sm font-normal text-gray-400"> / 100</span>
+                      <span className="text-sm font-normal text-muted-foreground"> / 100</span>
                     </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       SS1 Average (60%) + JSS3 Average (40%) · {filledCount} of {totalFields} filled
                     </p>
                   </div>

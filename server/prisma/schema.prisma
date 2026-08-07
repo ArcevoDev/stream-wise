@@ -184,6 +184,81 @@ enum Subject {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VERSIONED DOMAIN CATALOGS (P0-1)
+// ─────────────────────────────────────────────────────────────────────────────
+// CLAUDE.md "What NOT to build": no hardcoded subject lists — these are
+// versioned catalog tables. The Subject enum remains as the STABLE identity
+// for subject codes (Scores.tsx imports it from server/enums); what is
+// versioned here is which subjects exist in a given NERDC academic session,
+// which are core/trade, and which stream they belong to.
+
+/// An academic session in the NERDC curriculum (e.g. "2025/2026").
+model AcademicSession {
+  id        String    @id @default(uuid())
+  name      String    @unique // e.g. "2025/2026"
+  label     String? // e.g. "2025/2026 NERDC curriculum"
+  isActive  Boolean   @default(false)
+  startedAt DateTime?
+  endedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  subjects   SubjectCatalog[]
+  weightSets AhpWeightSet[]
+
+  @@map("academic_sessions")
+}
+
+/// A subject as it exists in a specific academic session.
+/// The subject code (Subject enum) is the stable identity; the session
+/// scopes its validity, core/trade classification, and stream placement.
+model SubjectCatalog {
+  id                String          @id @default(uuid())
+  academicSessionId String
+  academicSession   AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
+
+  subject        Subject // stable enum value, e.g. ENGLISH_LANGUAGE
+  subjectCode    String // e.g. "ENG", "MTH", "BIO" — display code
+  name           String // display name
+  streamCategory AcademicStream?
+  isCore         Boolean         @default(false)
+  isTradeSubject Boolean         @default(false)
+  isActive       Boolean         @default(true)
+  sortOrder      Int             @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([academicSessionId, subject])
+  @@index([academicSessionId, isCore])
+  @@index([streamCategory])
+  @@map("subject_catalog")
+}
+
+/// Versioned AHP weight sets — the pairwise matrix, derived weights, and
+/// Consistency Ratio actually used for a recommendation. Immutable once a
+/// RecommendationLog references it (append-only; no update path in code).
+model AhpWeightSet {
+  id              String   @id @default(uuid())
+  version         String   @unique // e.g. "ahp-v1.0"
+  label           String? // provenance: e.g. "5 guidance counsellors, thesis §3.5.2"
+  criterionLabels Json // ["Academic Performance", "Vocational Interest (RIASEC)", "Personality Traits"]
+  pairwiseMatrix  Json // 3x3 Saaty matrix as nested array
+  weights         Json // [0.540, 0.297, 0.163] — derived priority vector
+  lambdaMax       Float
+  ci              Float
+  cr              Float // must be <= 0.10 (Saaty 1980)
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  academicSessionId String?
+  academicSession   AcademicSession? @relation(fields: [academicSessionId], references: [id], onDelete: SetNull)
+
+  recommendations RecommendationLog[]
+
+  @@index([isActive])
+  @@map("ahp_weight_sets")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -225,6 +300,11 @@ model Student {
   ssLevel      SSLevel   @default(SS2)
   phoneNumber  String?
 
+  /// arc-id external identity (future migration target).
+  /// Null while DSS keeps its own JWT auth; populated when arc-id becomes
+  /// the canonical identity system (see AGENTS.md → Identity decision).
+  arcId String? @unique
+
   /// Optional link to a School entity (multi-school deployments).
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
@@ -236,6 +316,15 @@ model Student {
   /// Career aspiration as free text — used by the JAMB validator (FR-08).
   /// E.g. "Medicine and Surgery", "Law", "Accounting".
   careerAspiration String?
+
+  /// Consent record (ethics/landing page, P0-4). None null = not consented.
+  consentVersion   String? // e.g. "consent-v1"
+  consentStatus    String? // "granted" | "withdrawn"
+  consentGrantedAt DateTime?
+  consentPoint1    Boolean? // academic-project/not-official-service understanding
+  consentPoint2    Boolean? // responses used for recommendation + study evaluation
+  consentPoint3    Boolean? // decision-aid, not replacement for counsellor
+  consentPoint4    Boolean? // voluntary, may stop at any time
 
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
@@ -256,6 +345,7 @@ model Student {
   @@index([schoolId])
   @@index([counselorId])
   @@index([email])
+  @@index([arcId])
   @@map("students")
 }
 
@@ -303,8 +393,8 @@ model AcademicProfile {
   studentId String  @unique
   student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  jss3Average Float @default(0)
-  ss1Average  Float @default(0)
+  jss3Average           Float @default(0)
+  ss1Average            Float @default(0)
   weightedAcademicScore Float @default(0)
 
   /// The stream the student is currently placed in (as reported by them).
@@ -391,6 +481,10 @@ model RiasecResponse {
   type       RiasecType // R | I | A | S | E | C
   value      Int // Likert 1–5
 
+  /// Instrument version (e.g. "riasec-v1") — stamped so a future item-set
+  /// change cannot corrupt historical responses (spec-required).
+  instrumentVersion String @default("riasec-v1")
+
   createdAt DateTime @default(now())
 
   @@unique([studentId, questionId])
@@ -405,10 +499,16 @@ model RiasecResponse {
 /// Derived Big Five personality profile — criterion C₃ (ω₃ = 0.163, §3.5.2).
 /// Each trait score is normalized to [0, 100] before SAW aggregation.
 ///
+/// P0-3e: neuroticism is a first-class 5-factor input — the SAW engine
+/// consumes it INVERTED as Emotional Stability (100 − neuroticism), which
+/// predicts capacity to sustain a demanding stream's workload (§2.3.4) and
+/// therefore positively drives all three streams. The raw neuroticismScore
+/// column is retained for the research record and counsellor insight.
+///
 /// Stream-personality mappings used in recommendation logic:
-///   Science    → high Openness (O)
-///   Humanities → high Openness (O) + Agreeableness (A)
-///   Business   → high Conscientiousness (C) + Extraversion (E)
+///   Science    → Openness (O) + Conscientiousness (C) + Stability
+///   Humanities → Openness (O) + Agreeableness (A) + Stability
+///   Business   → Conscientiousness (C) + Extraversion (E) + Stability
 model PersonalityProfile {
   id        String  @id @default(uuid())
   studentId String  @unique
@@ -438,6 +538,10 @@ model BfiResponse {
   trait        PersonalityTrait
   reverseKeyed Boolean          @default(false)
   value        Int // Likert 1–5 (raw, before any reversal)
+
+  /// Instrument version (e.g. "bfi-v1") — stamped so a future item-set
+  /// change cannot corrupt historical responses (spec-required).
+  instrumentVersion String @default("bfi-v1")
 
   createdAt DateTime @default(now())
 
@@ -481,6 +585,15 @@ model RecommendationLog {
   /// Shape: { w1_academic: 0.540, w2_riasec: 0.297, w3_personality: 0.163, cr: 0.007 }
   ahpWeightsSnapshot Json
 
+  /// P0-5: immutable FK to the exact weight set used (AhpWeightSet).
+  ahpWeightSetId String?
+  ahpWeightSet   AhpWeightSet? @relation(fields: [ahpWeightSetId], references: [id], onDelete: SetNull)
+
+  /// P0-5: which JAMB admission cycle / academic session the student's
+  /// subject combination was validated against, if any.
+  jambRequirementVersion String?
+  academicSessionName    String?
+
   /// Complete snapshot of all normalized inputs used by SAW (§3.5.3).
   /// Shape: {
   ///   academicScore: 0.72,
@@ -514,6 +627,8 @@ model JambCourse {
   courseName     String         @unique
   facultyArea    String // e.g. "Medicine", "Law", "Engineering"
   streamCategory AcademicStream
+  /// P0-1d: versioning by admission cycle (e.g. "2025/2026").
+  admissionCycle String         @default("2025/2026")
   utmeCutoffHint Int? // indicative UTME score (not enforced)
   description    String         @default("") @db.Text
 
@@ -525,6 +640,7 @@ model JambCourse {
 
   @@index([streamCategory])
   @@index([facultyArea])
+  @@index([admissionCycle])
   @@map("jamb_courses")
 }
 
@@ -584,10 +700,8 @@ model AuditLog {
   actorRole UserRole?
 
   /// Coarse action category. Recommended values:
-  /// LOGIN | LOGOUT | PASSWORD_CHANGE
-  /// SCORES_SUBMITTED | RIASEC_COMPLETED | BFI_COMPLETED
+  /// LOGIN | SCORES_SUBMITTED | RIASEC_COMPLETED | BFI_COMPLETED
   /// RECOMMENDATION_GENERATED | JAMB_VALIDATED
-  /// PROFILE_UPDATED | ACCOUNT_DEACTIVATED
   action String
 
   /// Arbitrary structured payload — keeps the table generic while

@@ -14,21 +14,13 @@ import {
   Trophy, AlertTriangle, CheckCircle2, XCircle, Printer, RotateCcw,
   Loader2, Scale, ClipboardCheck, BarChart3, Info,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, Card, CardContent } from "@arcevo/facet-components";
+import { Alert, AlertDescription } from "@/components/Alert";
 
 const STREAM_COLORS: Record<Stream, string> = {
   Science: "#3B82F6",
   Humanities: "#8B5CF6",
   Business: "#10B981",
-};
-
-const STREAM_SUBJECTS: Record<Stream, string[]> = {
-  Science: ["ENGLISH_LANGUAGE", "BIOLOGY", "CHEMISTRY", "PHYSICS", "MATHEMATICS"],
-  Humanities: ["ENGLISH_LANGUAGE", "LITERATURE_IN_ENGLISH", "GOVERNMENT", "HISTORY"],
-  Business: ["ENGLISH_LANGUAGE", "ECONOMICS", "COMMERCE", "FINANCIAL_ACCOUNTING", "MATHEMATICS"],
 };
 
 function subjectLabel(s: string): string {
@@ -51,13 +43,13 @@ export default function Results() {
     async function load(): Promise<void> {
       try {
         const [rec, cat] = await Promise.all([
-          api.get<{ recommendation: RecommendationResult }>("/recommend"),
+          api.post<{ recommendation: RecommendationResult }>("/recommend"),
           api.get<{ courses: JambCourse[] }>("/jamb/catalog"),
         ]);
         setResult(rec.data.recommendation);
         setCatalog(cat.data.courses);
         toast.success(
-          `Recommendation ready — ${rec.data.recommendation.topStream} Stream`,
+          `Recommendation ready. ${rec.data.recommendation.topStream} Stream`,
           { description: `Confidence: ${rec.data.recommendation.confidenceLevel.toFixed(1)}%` }
         );
       } catch (err) {
@@ -76,10 +68,10 @@ export default function Results() {
     setJambLoading(true);
     setJambResult(null);
     try {
-      const studentSubjects = STREAM_SUBJECTS[result.topStream] ?? [];
+      // P1-3: no hardcoded STREAM_SUBJECTS templates. The server validates
+      // against the student's real SS1 SubjectScore rows.
       const { data } = await api.post<JambValidationResult>("/jamb/validate", {
         jambCourseId: selectedCourseId,
-        studentSubjects,
       });
       setJambResult(data);
       // Toast based on compliance result
@@ -155,7 +147,7 @@ export default function Results() {
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 bg-brand-500 text-white text-xs font-bold px-4 py-1.5 rounded-full mb-3 uppercase tracking-widest">
             <Trophy size={12} />
-            Step 4 — Your Results
+            Step 4 · Your Results
           </span>
           <h1 className="text-3xl font-black text-gray-900">
             Your Recommended Stream:{" "}
@@ -166,21 +158,22 @@ export default function Results() {
           </p>
         </div>
 
-        {/* Personality-source notice */}
-        {result.personalitySource === "default" && (
+        {/* Personality-source notice (P0-3b: renormalized, never fake data) */}
+        {result.personalitySource === "renormalized" && (
           <Alert variant="warning">
             <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-amber-800">
-                This recommendation used a neutral personality estimate because you haven&apos;t
-                completed the Personality Assessment yet.{" "}
+                This recommendation was computed without a Personality assessment. The
+                personality weight was redistributed over your real academic and RIASEC
+                data.{" "}
                 <button
                   onClick={() => navigate("/personality")}
                   className="font-semibold underline"
                 >
-                  Take it now
+                  Take the personality quiz
                 </button>{" "}
-                for a more accurate result.
+                for a more complete result.
               </p>
             </div>
           </Alert>
@@ -197,7 +190,7 @@ export default function Results() {
               <h3 className="font-bold text-gray-900">SAW Preference Scores</h3>
             </div>
             <p className="text-xs text-gray-400 mb-4">
-              Weighted scores × 100 — higher is a stronger match
+              Weighted scores × 100. Higher is a stronger match
             </p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 30 }}>
@@ -273,22 +266,24 @@ export default function Results() {
 
             <div className="bg-gray-50 rounded-lg p-3 mb-4 border border-gray-100">
               <p className="text-xs font-semibold text-gray-500 mb-1">
-                Your {result.topStream} Stream subjects for validation:
+                Your validated subjects (from your SS1 academic record):
               </p>
               <p className="text-xs text-gray-700">
-                {(STREAM_SUBJECTS[result.topStream] ?? []).map(subjectLabel).join(" · ")}
+                {jambResult?.studentSubjects?.length
+                  ? jambResult.studentSubjects.map((s) => subjectLabel(String(s))).join(" · ")
+                  : "Select a course and validate to see your subject combination."}
               </p>
             </div>
 
             <div className="flex gap-2">
-              <Select
+              <select
                 aria-label="Select a target university course"
                 value={selectedCourseId}
                 onChange={(e) => {
                   setSelectedCourseId(e.target.value);
                   setJambResult(null);
                 }}
-                className="flex-1"
+                className="flex h-10 flex-1 rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="">Select a target university course…</option>
                 {recommendedCourses.length > 0 && (
@@ -307,7 +302,7 @@ export default function Results() {
                     ))}
                   </optgroup>
                 )}
-              </Select>
+              </select>
               <Button
                 onClick={handleJAMBValidate}
                 disabled={!selectedCourseId || jambLoading}

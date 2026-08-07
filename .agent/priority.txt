@@ -1,0 +1,211 @@
+================================================================================
+STREAMWISE — ARCHITECTURE & PRIORITY REGISTER
+Updated: 2026-08-07 · P0 COMPLETE · next build = P1-1 tests · v7
+Companion to .agent/output.txt (live status dashboard). This file owns the
+PRIORITY ORDER; output.txt owns the STATUS.
+================================================================================
+GOVERNING RULE
+--------------------------------------------------------------------------------
+Architecture first. Nothing below P0 gets built until P0 lands, because every
+P1/P2 item either tests, drives, or displays the P0 structures. The engine is
+already pure — the problem is that its INPUTS (weights, stream mappings,
+subject catalogs) are hardcoded constants instead of versioned data, so the
+engine can neither be driven by the DB nor meaningfully unit-tested against
+real configurations.
+
+================================================================================
+P0 — ARCHITECTURE (foundation; ALL COMPLETE — status in .agent/output.txt)
+================================================================================
+P0-1..P0-5 are SHIPPED. P0-3e resolved (neuroticism → Emotional Stability),
+P0-4 consent + career-goal capture live, P0-5 re-scoring endpoint live.
+The full detail lives in output.txt ("METHODOLOGY DECISIONS RECORDED" +
+per-item [DONE] status). Keep this section as the historical spec; the
+"ORDER OF EXECUTION" below now points at P1.
+
+P0-1. Versioned domain catalogs + weight sets (CLAUDE.md "What NOT to build" fix)
+--------------------------------------------------------------------------------
+The spec's central rule — "no hardcoded 3-stream enum or hardcoded JAMB
+subject lists in code; these are versioned catalog tables" — is currently
+violated end-to-end.
+
+  a) SubjectCatalog table (academicSession FK, e.g. "2025/2026"): subject
+     code, name, streamCategory, isCore, isTradeSubject, isActive.
+     Replace hardcoded Subject enum usage in SubjectScore/JambCourseSubject
+     (keep the enum as a stable reference OR migrate to String + FK —
+     DECISION REQUIRED; see Known Decisions below). - whichever is best and most scalable
+  b) Stream catalog: labels, descriptors, career lists per stream, versioned
+     by academicSession. Kills the hardcoded stream literals in saw.ts and
+     confidence.ts and the manual streamEnumMap in recommend.controller.ts.
+  c) AhpWeightSet table: pairwise matrix (Json), derived weights (Json),
+     cr, lambda, version, createdAt, immutable once referenced. Seed one
+     row from the current PAIRWISE_MATRIX (ω ≈ [0.540, 0.297, 0.163], CR
+     ≈ 0.007). Engine consumes weights from here, never from module-load
+     constants (delete AHP_WEIGHTS / W_ACADEMIC / W_RIASEC / W_PERSONALITY
+     module-level constants).
+  d) JambRequirement versioning: add admissionCycle to JambCourse (or a
+     versioned JambRequirement table). Current JambCourse + JambCourseSubject
+     join is relational but global — one cycle only.
+  e) RIASEC→stream affinity mapping and personality→stream mapping become
+     versioned config rows (part of the weight set or catalog), not literals
+     in riasec.ts / saw.ts.
+
+P0-2. Engine seam re-wiring (spec-shaped, data-driven, testable)
+--------------------------------------------------------------------------------
+Match the CLAUDE.md engine contract. Purity is already intact; the seams are
+wrong.
+
+  a) computeAhpWeights(pairwiseMatrix): takes the matrix as a parameter,
+     THROWS when CR > 0.10 (Saaty rejection, §2.3.6) instead of returning an
+     ignored `consistent` flag.
+  b) scoreStreams(studentProfile, weights, subjectCatalog) or equivalent:
+     computeSAW must accept weights + stream→criterion mappings as arguments.
+     No imports of engine-internal weight constants.
+  c) validateJambPrerequisites(recommendedStream, careerGoal,
+     jambRequirements): extract from jamb.controller.ts into a PURE engine
+     module (it currently does inline set-difference inside a Prisma route
+     handler).
+  d) explainRecommendation(rankedStreams, weights): per-criterion
+     contribution breakdown per stream (Academic / RIASEC / Personality),
+     feeding guidanceInsight. Currently generateGuidanceInsight is narrative
+     prose without a contribution breakdown.
+  e) Single source of truth for stream identity: engine "Science" strings,
+     DB AcademicStream enum, and streamEnumMap collapse into one typed
+     mapping derived from the stream catalog (P0-1b).
+
+P0-3. Methodology integrity pinning (invisible gaps — research-validity issues)
+--------------------------------------------------------------------------------
+These are silent divergences between the code and the documented thesis
+methodology. An examiner re-running the math would find them.
+
+  a) Academic-by-stream scoring: recommend.controller.ts gives all three
+     streams the SAME core-weighted baseline (jss3*0.4 + SS1 English+Maths
+     avg*0.6) and upgrades only the student's reported currentStream to
+     weightedAcademicScore. If no stream is reported, the academic criterion
+     is identical across streams and cannot differentiate. Pin ONE
+     documented rule (per-stream academic score = jss3*0.4 + that stream's
+     SS1 subjects*0.6, per §3.5.3) and implement it uniformly.
+  b) DEFAULT_PERSONALITY injection: a student who skips BFI gets neutral
+     60/60/60/60 data fed into SAW at FULL weight (0.163) — silent bias.
+     Fix: either require BFI before recommendation, or renormalize the
+     weight vector over the criteria actually present. Never inject fake
+     data at full weight.
+  c) Confidence CL rescaling [50,100]: formula exists (rawCL 1/3 → 0.5).
+     Document "why 50 min" in the engine + UI (already flagged in
+     output.txt; make it a documented constant, not magic math).
+  d) Personality→stream mapping contradiction: saw.ts Science = (O+C)/2 but
+     schema comment says Science→O only. Resolve and record the canonical
+     mapping (→ versioned config in P0-1e).
+  e) neuroticismScore is stored but never consumed by SAW. Decide: include
+     it in the methodology (5-factor) or document its exclusion. - include in methodology - if that's best
+  f) Subject enum contains legacy artifacts (CIVIC_EDUCATION "superseded")
+     — resolves naturally when SubjectCatalog becomes the source of truth
+     (P0-1a).
+
+P0-4. Consent + career-goal data model (ethics + validator input)
+--------------------------------------------------------------------------------
+  a) Consent recording: Student (or ConsentRecord table) gains
+     consentVersion, consentedAt, and per-point consent booleans (the
+     landing page spec lists 4 points). Assessment flow gates on consent.
+     No consent artifact exists today — the ethics card is a marketing page.
+  b) careerAspiration: schema field exists but NOTHING collects it in the
+     client flow, and the JAMB validator ignores it (student browses a
+     catalog and picks a course). Capture it (register or profile step),
+     store it, and drive validateJambPrerequisites(careerGoal, ...) from it
+     per the spec (P0-2c).
+
+P0-5. Audit version linkage + re-scoring path
+--------------------------------------------------------------------------------
+  a) RecommendationLog gains ahpWeightSetId (FK → P0-1c) and
+     jambRequirementVersion / admissionCycle reference. Today it snapshots
+     weights as JSON but cannot be correlated to the exact weight set or
+     JAMB cycle that produced it.
+  b) instrumentVersion on RiasecResponse + BfiResponse (spec-required) so a
+     future item-set change cannot corrupt historical responses. Question
+     sets (RIASEC_QUESTIONS / BFI_QUESTIONS in engine code) need a version
+     that gets stamped into responses and profiles.
+  c) Re-scoring path: RiasecResponse / BfiResponse rows are write-only today
+     — never re-read. The 100-profile validation study (§3.8) needs a
+     version-aware re-scoring entry point (compute profiles from raw rows
+     via the existing computeRIASEC / computeBFI).
+
+================================================================================
+P1 — OPERATIONAL (P0 is complete; remaining P1 items below)
+===============================================================================
+  1. Engine unit tests (Vitest): AHP (weights ≈ [0.540, 0.297, 0.163], CR ≈
+     0.007, CR>0.10 rejection), RIASEC 48-item scoring + summary code, BFI
+     reverse-keyed flipping (6−v), SAW ranking + confidence rescale +
+     zero-input fallback, validateJambPrerequisites, explainRecommendation.
+     Then the 100-profile validation simulation → "Validation Testing"
+     thesis evidence. (ZERO tests exist today.)
+  2. [DONE] AuditLog writes on LOGIN, SCORES_SUBMITTED, RIASEC_COMPLETED,
+     BFI_COMPLETED, RECOMMENDATION_GENERATED, JAMB_VALIDATED — writeAudit
+     helper in services/audit.ts; admin audit tab renders them.
+  3. [DONE] JAMB validator uses the student's REAL SubjectScore rows (server-side
+     lookup from studentId) — client no longer sends hardcoded STREAM_SUBJECTS
+     templates.
+  4. [DONE] requireRole applied to STUDENT routes (/profile, /riasec, /bfi,
+     /recommend, /jamb); /auth/profile + /consent stay role-flexible; /auth/role
+     added for token-role introspection.
+  5. Student UX polish [PARTIAL]: history endpoint paginated + ready; still
+     open: history page UI, resume-step routing (mid-flow logout dumps back
+     to /scores), profile editing (password, career aspiration, school).
+     Bug 2.1 (schoolName concatenation) is RESOLVED — real School row via FK.
+  6. [DONE] API hygiene: generation is POST /api/recommend (no GET side
+     effect); error envelope unified { error, details? }; getHistory paginated.
+  7. [DONE] Client .env.example for VITE_API_BASE_URL.
+  8. [DONE 2026-08-07] Role-aware staff landing: STUDENT → assessment flow;
+     COUNSELOR/SCHOOL_ADMIN/ADMIN → /admin. /admin is read-only for non-ADMIN
+     staff (client hides Export CSV; server requireRole(ADMIN) is the backstop).
+     Decision recorded — see output.txt → P1.5. Demo accounts via pnpm seed:roles
+     (student@dss.test / counselor@dss.test / schooladmin@dss.test / ADMIN_EMAIL).
+  9. [DONE 2026-08-07] UI shell polish: glass cards, full-width sticky navbar
+     (installed facet 1.0.2 pill floats even on mobile, so Topbar/landing use
+     variant="sticky"), ThemeProvider defaultTheme="system", plain local
+     sun/moon ThemeToggle (facet 1.0.2 toggle is a dropdown), circular LASU
+     badge, Topbar hidden on landing (/) to remove double navbar.
+
+================================================================================
+P2 — DEEPER THESIS MATERIAL (after P0 + P1)
+================================================================================
+  1. Counselor portal: list assigned students (Student.counselorId exists),
+     view results, add notes. SCHOOL_ADMIN / COUNSELOR roles exist in the
+     type system but have NO routes — the only role-gated area is /admin.
+  2. Admin CRUD: manage JAMB catalog (seed-only today), manage students
+     (deactivate, reassign counselor).
+  3. Individual recommendation CSV/PDF export (print is the only "save").
+  4. Auth hardening: localStorage JWT is XSS-exposed — document the decision
+     or move to httpOnly cookie; token revocation on password change.
+  5. i18n-ready structure (not required; Nigeria-focused English is fine).
+  6. README/thorough docs: ASCII architecture diagram, API reference table,
+     test instructions, validation-study section.
+
+================================================================================
+KNOWN DECISIONS (recorded so execution does not re-litigate)
+================================================================================
+  • arc-id (@arcevo/facet-auth + facet-sdk) is DEFERRED — local JWT auth
+    stays; Student.arcId is the migration surface. (AGENTS.md decision.)
+  • AuditLog is domain-owned in the shipped app (spec said arc-id's job —
+    superseded by the AGENTS.md auth decision).
+  • AcademicStream enum retained as the canonical 3-stream identity (stable
+    domain); what gets versioned is SUBJECT catalogs, stream metadata/
+    descriptors, weights, and JAMB cycles. (P0-1 refinement of the spec.)
+  • SAW criterion weights [0.540, 0.297, 0.163] come from 5 guidance
+    counsellors' expert judgement (thesis §3.5.2) — the seeded AhpWeightSet
+    row must cite this provenance.
+  • P0-3e NEUROTICISM DECIDED: INCLUDED as Emotional Stability (100 −
+    neuroticism), a 5-factor positive driver for all three streams. SAW
+    personality criterion = mean of 3 traits per stream. The raw
+    neuroticismScore column stays for the research record. algorithmVersion
+    = ahp-saw-v1.1. (Thesis §3.5.3 must cite this; see output.txt →
+    METHODOLOGY DECISIONS RECORDED.)
+
+================================================================================
+ORDER OF EXECUTION
+================================================================================
+  P0 is COMPLETE (P0-1 schema → P0-2 seams → P0-3 methodology → P0-4 consent →
+  P0-5 audit linkage all shipped). P1-1 (engine tests + 100-profile validation
+  simulation) is the NEXT build. Then P1-5 remaining student UX polish
+  (history page UI, resume-step routing, profile editing) → P2.
+  Test vectors for P1-1 must pin the P0-3e 3-trait personality mapping
+  (O+C+ES / O+A+ES / E+C+ES) and the derived emotionalStabilityScore.
+================================================================================

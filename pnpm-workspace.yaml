@@ -1,8 +1,22 @@
 packages:
   - "client"
   - "server"
+# pnpm 11 defaults minimumReleaseAge to 1440 (1 day), which blocks the
+# project's own freshly-published @arcevo/facet-* packages on first use.
+minimumReleaseAge: 0
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
   esbuild: true
   prisma: true
+minimumReleaseAgeExclude:
+  - '@arcevo/facet-components@1.0.0'
+  - '@arcevo/facet-layout@1.0.0'
+  - '@arcevo/facet-tokens@1.0.0'
+  - '@arcevo/facet-components@1.0.1'
+  - '@arcevo/facet-layout@1.0.1'
+  - '@arcevo/facet-tokens@1.0.1'
+  - '@arcevo/facet-components@1.0.2'
+  - '@arcevo/facet-layout@1.0.2'
+  - '@arcevo/facet-auth@1.0.2'
+  - '@arcevo/facet-sdk@1.0.1'

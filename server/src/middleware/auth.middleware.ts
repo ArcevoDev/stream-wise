@@ -28,7 +28,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 }
 
 /**
- * Role guard — must run AFTER authenticateToken. Rejects the request unless
+ * Role guard. Must run AFTER authenticateToken. Rejects the request unless
  * the verified token's role is in the allowed set.
  */
 export function requireRole(...roles: UserRole[]): (req: Request, res: Response, next: NextFunction) => void {

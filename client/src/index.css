@@ -2,87 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── shadcn/ui CSS variable layer ─────────────────────────────────────────── */
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    /* brand-500 = #2E4057 */
-    --primary: 214 32% 26%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 214 32% 26%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 214 32% 26%;
-    --radius: 0.75rem;
-  }
-}
+/*
+ * Facet design tokens live in @arcevo/facet-tokens/tokens.css and are imported
+ * from main.tsx (before this file) so Vite bundles them first. They define
+ * --background, --primary, --border, etc. (OKLCH) plus [data-theme="light"]
+ * overrides, .glass, .glow-indigo, and .text-gradient helpers.
+ */
 
 @layer base {
   * {
     @apply border-border;
   }
 
-  body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
-  }
-
-  /* Smooth scrolling for the RIASEC section jumps */
   html {
     scroll-behavior: smooth;
   }
-}
 
-/* ── Legacy component classes (kept for gradual migration) ─────────────────── */
-@layer components {
-  .btn-primary {
-    @apply bg-brand-500 hover:bg-brand-600 text-white font-semibold
-           px-6 py-3 rounded-xl transition-all duration-200
-           disabled:opacity-50 disabled:cursor-not-allowed
-           shadow-sm hover:shadow-md active:scale-95
-           inline-flex items-center justify-center gap-2;
-  }
-
-  .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-brand-500 font-semibold
-           px-6 py-3 rounded-xl border border-brand-500/30
-           transition-all duration-200 active:scale-95
-           inline-flex items-center justify-center gap-2;
-  }
-
-  .card {
-    @apply bg-white rounded-2xl shadow-sm border border-gray-100 p-6;
-  }
-
-  /* Legacy .input — shadcn Input component preferred for new code */
-  .input {
-    @apply w-full border border-gray-200 rounded-xl px-4 py-3 text-sm
-           focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500
-           transition-all duration-200 placeholder-gray-400 bg-white;
-  }
-
-  .label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
-  }
-
-  .error-text {
-    @apply text-red-500 text-xs mt-1;
-  }
-
-  .step-badge {
-    @apply inline-flex items-center justify-center w-8 h-8 rounded-full
-           bg-brand-500 text-white text-sm font-bold shrink-0;
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }
 
@@ -99,6 +36,6 @@
 
   .card {
     box-shadow: none !important;
-    border: 1px solid #e5e7eb !important;
+    border: 1px solid var(--border) !important;
   }
 }

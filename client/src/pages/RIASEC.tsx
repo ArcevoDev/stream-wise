@@ -6,9 +6,8 @@ import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
 import type { RiasecLetter, RiasecQuestion } from "@/types/index";
 import { Brain, ChevronRight, ChevronLeft, Loader2, AlertCircle, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, Card, CardContent } from "@arcevo/facet-components";
+import { Alert, AlertDescription } from "@/components/Alert";
 
 interface LikertOption {
   value: number;
@@ -24,12 +23,12 @@ const LIKERT: LikertOption[] = [
 ];
 
 const TYPE_COLORS: Record<RiasecLetter, string> = {
-  R: "bg-orange-100 text-orange-700 border-orange-200",
-  I: "bg-blue-100 text-blue-700 border-blue-200",
-  A: "bg-purple-100 text-purple-700 border-purple-200",
-  S: "bg-pink-100 text-pink-700 border-pink-200",
-  E: "bg-amber-100 text-amber-700 border-amber-200",
-  C: "bg-teal-100 text-teal-700 border-teal-200",
+  R: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+  I: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  A: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  S: "bg-pink-500/10 text-pink-600 border-pink-500/20",
+  E: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+  C: "bg-teal-500/10 text-teal-600 border-teal-500/20",
 };
 
 const TYPE_NAMES: Record<RiasecLetter, string> = {
@@ -86,7 +85,7 @@ export default function RIASEC() {
     setError("");
     // Show a small progress toast only on the first 5 section advances
     if (page < 5) {
-      toast.info(`Section ${page + 1} complete — ${TYPES.length - page - 1} sections left.`, {
+      toast.info(`Section ${page + 1} complete. ${TYPES.length - page - 1} sections left.`, {
         duration: 2000,
       });
     }
@@ -129,17 +128,17 @@ export default function RIASEC() {
 
   if (fetching) {
     return (
-      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={36} className="text-brand-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Loading assessment questions…</p>
+          <Loader2 size={36} className="text-primary animate-spin mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Loading assessment questions…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-gray-50 py-10 px-4">
+    <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-2xl mx-auto">
         <ProgressBar step={2} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
 
@@ -150,25 +149,25 @@ export default function RIASEC() {
               key={t}
               title={TYPE_NAMES[t]}
               className={`h-2 flex-1 rounded-full transition-all ${
-                i < page ? "bg-brand-500" : i === page ? "bg-brand-300" : "bg-gray-200"
+                i < page ? "bg-primary" : i === page ? "bg-primary/40" : "bg-muted"
               }`}
             />
           ))}
         </div>
-        <p className="text-center text-xs text-gray-400 mt-1">
-          Section {page + 1} of 6 — {TYPE_NAMES[currentType]} ({answered}/{pageQuestions.length} answered)
+        <p className="text-center text-xs text-muted-foreground mt-1">
+          Section {page + 1} of 6 · {TYPE_NAMES[currentType]} ({answered}/{pageQuestions.length} answered)
         </p>
 
         <div className="mt-6">
-          <Card>
+          <Card variant="glass" className="rounded-2xl border-border/60">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-5">
-                <span className="step-badge">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
                   <Brain size={14} />
                 </span>
                 <div>
-                  <h2 className="font-black text-gray-900 text-lg">Vocational Interest Assessment</h2>
-                  <p className="text-xs text-gray-500">
+                  <h2 className="font-black text-foreground text-lg">Vocational Interest Assessment</h2>
+                  <p className="text-xs text-muted-foreground">
                     Rate how much you enjoy each activity ({totalExpected} items · 6 sections)
                   </p>
                 </div>
@@ -188,12 +187,12 @@ export default function RIASEC() {
                     key={q.id}
                     className={`p-4 rounded-xl border transition-all ${
                       responses[q.id] !== undefined
-                        ? "border-brand-200 bg-brand-50/40"
-                        : "border-gray-100 bg-white"
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border bg-card/60"
                     }`}
                   >
-                    <p className="text-sm font-medium text-gray-800 mb-3">
-                      <span className="text-gray-400 text-xs mr-2">Q{q.id}.</span>
+                    <p className="text-sm font-medium text-foreground mb-3">
+                      <span className="text-muted-foreground text-xs mr-2">Q{q.id}.</span>
                       {q.text}
                     </p>
                     <div className="flex gap-2 flex-wrap">
@@ -204,8 +203,8 @@ export default function RIASEC() {
                           onClick={() => handleRate(q.id, l.value)}
                           className={`flex-1 min-w-[60px] py-2 px-1 rounded-lg text-xs font-medium border transition-all ${
                             responses[q.id] === l.value
-                              ? "bg-brand-500 text-white border-brand-500 shadow-sm"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-brand-300 hover:bg-brand-50"
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : "bg-card text-foreground border-border hover:border-primary/40 hover:bg-accent/50"
                           }`}
                         >
                           {l.value}
@@ -271,7 +270,7 @@ export default function RIASEC() {
           </Card>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
+        <p className="text-center text-xs text-muted-foreground mt-4">
           {totalAnswered} of {totalExpected} questions answered
         </p>
       </div>

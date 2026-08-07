@@ -2,10 +2,11 @@ import type { Request, Response } from "express";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
 import { AcademicStream } from "@prisma-client";
+import { rescoreBfi, rescoreRiasec } from "@/engine/index.js";
 import type { AdminStudentsQuery, AdminAuditQuery } from "@/validators/schemas.js";
 
 /**
- * GET /api/admin/stats — headline KPIs + the completion funnel.
+ * GET /api/admin/stats. Headline KPIs + the completion funnel.
  * The funnel counts how many registered students reached each milestone:
  * registered → scores → RIASEC → BFI → recommendation.
  */
@@ -58,7 +59,7 @@ export const getStats = asyncHandler(async (_req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/analytics — distributions for the dashboard charts.
+ * GET /api/admin/analytics. Distributions for the dashboard charts.
  *  - streamDistribution: recommended topStream counts
  *  - confidenceDistribution: confidenceLevel bucketed into 10-point bins
  *  - registrationsByMonth: student registrations per calendar month
@@ -86,7 +87,7 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
     }),
   ]);
 
-  // Stream distribution — align to the AcademicStream enum, default 0.
+  // Stream distribution. Align to the AcademicStream enum, default 0.
   const streamDistribution = {
     [AcademicStream.SCIENCE]: 0,
     [AcademicStream.HUMANITIES]: 0,
@@ -96,7 +97,7 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
     streamDistribution[row.topStream] = row._count._all;
   }
 
-  // Confidence histogram — 10-point bins 0-9 .. 90-100.
+  // Confidence histogram. 10-point bins 0-9 .. 90-100.
   const bins = Array.from({ length: 10 }, () => 0);
   for (const r of allRecommendations) {
     const bucket = Math.min(9, Math.floor(r.confidenceLevel / 10));
@@ -107,7 +108,7 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
     count,
   }));
 
-  // Registrations per month (YYYY-MM) — from first to latest registration.
+  // Registrations per month (YYYY-MM). From first to latest registration.
   const byMonth = new Map<string, number>();
   for (const s of registrations) {
     const key = s.createdAt.toISOString().slice(0, 7); // YYYY-MM
@@ -119,7 +120,7 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
   }));
 
   // Top JAMB courses with compliance rate. Rows are grouped by
-  // (course, isCompliant) — roll up per course, then sort by total count.
+  // (course, isCompliant). Roll up per course, then sort by total count.
   const perCourse = new Map<string, { total: number; compliant: number }>();
   for (const row of topJambRows) {
     const count = row._count._all ?? 0;
@@ -223,7 +224,7 @@ export const getStudents = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/students/:id — full drill-down view for the admin detail page:
+ * GET /api/admin/students/:id. Full drill-down view for the admin detail page:
  * profile, academic, RIASEC/BFI, recommendation history, JAMB validations.
  */
 export const getStudentDetail = asyncHandler(async (req: Request, res: Response) => {
@@ -273,9 +274,10 @@ export const getStudentDetail = asyncHandler(async (req: Request, res: Response)
 });
 
 /**
- * GET /api/admin/audit?studentId=&action=&limit= — recent audit trail.
- * AuditLog is currently never written by the app (see roadmap), but the
- * endpoint is here so the admin UI can surface records once they exist.
+ * GET /api/admin/audit?studentId=&action=&limit=. Recent audit trail.
+ * Rows are written by services/audit.ts (writeAudit) on the six key domain
+ * actions: LOGIN, SCORES_SUBMITTED, RIASEC_COMPLETED, BFI_COMPLETED,
+ * RECOMMENDATION_GENERATED, JAMB_VALIDATED.
  */
 export const getAuditLogs = asyncHandler(async (req: Request, res: Response) => {
   const { studentId, action, limit = 50 } = req.query as unknown as AdminAuditQuery;
@@ -294,7 +296,7 @@ export const getAuditLogs = asyncHandler(async (req: Request, res: Response) => 
 });
 
 /**
- * GET /api/admin/export/csv — full student dataset for the thesis appendix.
+ * GET /api/admin/export/csv. Full student dataset for the thesis appendix.
  * Downloads a UTF-8 CSV with one row per student. Profile values are joined
  * in so the sheet is usable standalone (no IDs to look up).
  */
@@ -366,4 +368,81 @@ export const exportCsv = asyncHandler(async (_req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", `attachment; filename="dss-students-${new Date().toISOString().slice(0, 10)}.csv"`);
   res.send([header.join(","), ...rows].join("\n"));
+});
+
+/**
+ * POST /api/admin/rescore/:studentId. P0-5c validation-study entry point.
+ * Recomputes a student's RIASEC + BFI profiles from the RAW response rows
+ * via the pure engine helpers, without touching stored profile rows. The
+ * thesis 100-profile simulation (§3.8) uses this to prove scoring stability.
+ *
+ * Response contains the recomputed profiles plus whether the recomputed
+ * values differ from the currently-stored profile (drift flag).
+ */
+export const rescoreStudent = asyncHandler(async (req: Request, res: Response) => {
+  const { studentId } = req.params;
+
+  const [riasecRows, bfiRows, riasecProfile, personalityProfile] = await Promise.all([
+    prisma.riasecResponse.findMany({
+      where: { studentId },
+      orderBy: { questionId: "asc" },
+    }),
+    prisma.bfiResponse.findMany({
+      where: { studentId },
+      orderBy: { questionId: "asc" },
+    }),
+    prisma.riasecProfile.findUnique({ where: { studentId } }),
+    prisma.personalityProfile.findUnique({ where: { studentId } }),
+  ]);
+
+  const missing: string[] = [];
+  if (riasecRows.length === 0) missing.push("riasec");
+  if (bfiRows.length === 0) missing.push("bfi");
+
+  if (missing.length > 0) {
+    res.status(404).json({
+      error: `No raw responses found for student ${studentId} (${missing.join(", ")}).`,
+    });
+    return;
+  }
+
+  // Recompute from raw rows. A stored instrumentVersion that predates the
+  // version check will throw. Surface it as a 409 so the study runner can
+  // flag legacy data rather than silently rescoring with the wrong key.
+  let riasecScores;
+  let bfiScores;
+  try {
+    riasecScores = rescoreRiasec(
+      riasecRows.map((r) => ({ questionId: r.questionId, value: r.value, instrumentVersion: r.instrumentVersion }))
+    );
+    bfiScores = rescoreBfi(
+      bfiRows.map((r) => ({ questionId: r.questionId, value: r.value, reverseKeyed: r.reverseKeyed, instrumentVersion: r.instrumentVersion }))
+    );
+  } catch (err) {
+    res.status(409).json({ error: err instanceof Error ? err.message : String(err) });
+    return;
+  }
+
+  const riasecDrift =
+    riasecProfile &&
+    (Math.abs(riasecScores.scienceAffinity - riasecProfile.scienceAffinity) > 0.05 ||
+      Math.abs(riasecScores.humanitiesAffinity - riasecProfile.humanitiesAffinity) > 0.05 ||
+      Math.abs(riasecScores.businessAffinity - riasecProfile.businessAffinity) > 0.05);
+
+  const bfiDrift =
+    personalityProfile &&
+    (Math.abs(bfiScores.opennessScore - personalityProfile.opennessScore) > 0.05 ||
+      Math.abs(bfiScores.conscientiousnessScore - personalityProfile.conscientiousnessScore) > 0.05 ||
+      Math.abs(bfiScores.extraversionScore - personalityProfile.extraversionScore) > 0.05 ||
+      Math.abs(bfiScores.agreeablenessScore - personalityProfile.agreeablenessScore) > 0.05 ||
+      // P0-3e: stability is derived (100 − neuroticism), so a neuroticism
+      // drift is implicitly covered; kept explicit for the study record.
+      Math.abs(bfiScores.neuroticismScore - personalityProfile.neuroticismScore) > 0.05);
+
+  res.json({
+    studentId,
+    recomputed: { riasec: riasecScores, bfi: bfiScores },
+    drift: { riasec: riasecDrift ?? null, bfi: bfiDrift ?? null },
+    note: "Recomputed from raw response rows. Stored profiles were NOT modified.",
+  });
 });

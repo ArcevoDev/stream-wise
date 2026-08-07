@@ -6,9 +6,8 @@ import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
 import type { BfiQuestion, BfiTrait } from "@/types/index";
 import { Smile, Loader2, AlertCircle, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, Card, CardContent } from "@arcevo/facet-components";
+import { Alert, AlertDescription } from "@/components/Alert";
 
 interface LikertOption {
   value: number;
@@ -24,11 +23,11 @@ const LIKERT: LikertOption[] = [
 ];
 
 const TRAIT_COLORS: Record<BfiTrait, string> = {
-  O: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  C: "bg-cyan-100 text-cyan-700 border-cyan-200",
-  E: "bg-rose-100 text-rose-700 border-rose-200",
-  A: "bg-lime-100 text-lime-700 border-lime-200",
-  N: "bg-slate-100 text-slate-700 border-slate-200",
+  O: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+  C: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20",
+  E: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+  A: "bg-lime-500/10 text-lime-600 border-lime-500/20",
+  N: "bg-slate-500/10 text-slate-600 border-slate-500/20",
 };
 
 const TRAIT_NAMES: Record<BfiTrait, string> = {
@@ -62,7 +61,7 @@ export default function Personality() {
   }, []);
 
   const totalAnswered = Object.keys(responses).length;
-  // Dynamic — not hardcoded to 20, so a BFI-44 swap works automatically
+  // Dynamic. Not hardcoded to 20, so a BFI-44 swap works automatically
   const allAnswered = totalAnswered === questions.length && questions.length > 0;
 
   function handleRate(questionId: number, value: number): void {
@@ -96,10 +95,10 @@ export default function Personality() {
 
   if (fetching) {
     return (
-      <div className="min-h-[calc(100vh-60px)] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={36} className="text-brand-500 animate-spin mx-auto mb-3" />
-          <p className="text-gray-500 text-sm">Loading assessment questions…</p>
+          <Loader2 size={36} className="text-primary animate-spin mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Loading assessment questions…</p>
         </div>
       </div>
     );
@@ -111,22 +110,22 @@ export default function Personality() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-gray-50 py-10 px-4">
+    <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-2xl mx-auto">
         <ProgressBar step={3} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
 
         <div className="mt-6">
-          <Card>
+          <Card variant="glass" className="rounded-2xl border-border/60">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-6">
-                <span className="step-badge">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
                   <Smile size={14} />
                 </span>
                 <div>
-                  <h2 className="font-black text-gray-900 text-lg">
+                  <h2 className="font-black text-foreground text-lg">
                     Personality Assessment (BFI-{questions.length})
                   </h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     Rate how well each statement describes you · {totalAnswered}/{questions.length}{" "}
                     answered
                   </p>
@@ -150,15 +149,15 @@ export default function Personality() {
                             key={q.id}
                             className={`p-4 rounded-xl border transition-all ${
                               responses[q.id] !== undefined
-                                ? "border-brand-200 bg-brand-50/40"
-                                : "border-gray-100 bg-white"
+                                ? "border-primary/30 bg-primary/5"
+                                : "border-border bg-card/60"
                             }`}
                           >
-                            <p className="text-sm font-medium text-gray-800 mb-3">
-                              <span className="text-gray-400 text-xs mr-2">Q{q.id}.</span>
+                            <p className="text-sm font-medium text-foreground mb-3">
+                              <span className="text-muted-foreground text-xs mr-2">Q{q.id}.</span>
                               {q.text}
                               {q.reverseKeyed && (
-                                <span className="ml-2 text-[10px] text-gray-400 font-normal italic">
+                                <span className="ml-2 text-[10px] text-muted-foreground font-normal italic">
                                   (reversed)
                                 </span>
                               )}
@@ -171,8 +170,8 @@ export default function Personality() {
                                   onClick={() => handleRate(q.id, l.value)}
                                   className={`flex-1 min-w-[56px] py-2 px-1 rounded-lg text-xs font-medium border transition-all ${
                                     responses[q.id] === l.value
-                                      ? "bg-brand-500 text-white border-brand-500 shadow-sm"
-                                      : "bg-white text-gray-600 border-gray-200 hover:border-brand-300 hover:bg-brand-50"
+                                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                                      : "bg-card text-foreground border-border hover:border-primary/40 hover:bg-accent/50"
                                   }`}
                                 >
                                   {l.value}
@@ -217,7 +216,7 @@ export default function Personality() {
               </Button>
 
               {!allAnswered && (
-                <p className="text-center text-xs text-gray-400 mt-2">
+                <p className="text-center text-xs text-muted-foreground mt-2">
                   {questions.length - totalAnswered} question
                   {questions.length - totalAnswered !== 1 ? "s" : ""} remaining
                 </p>
