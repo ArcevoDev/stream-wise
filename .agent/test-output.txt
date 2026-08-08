@@ -1,0 +1,18 @@
+PS C:\Users\HP\Desktop\ArcevoDev\stream-wise> pnpm --filter 
+server test
+$ vitest run
+
+ RUN  v3.2.4 C:/Users/HP/Desktop/ArcevoDev/stream-wise/server
+
+ ✓ src/engine/ahp.test.ts (6 tests) 30ms
+ ✓ src/engine/bfi.test.ts (6 tests) 31ms
+ ✓ src/engine/rescore.test.ts (6 tests) 30ms
+ ✓ src/engine/riasec.test.ts (6 tests) 31ms
+ ✓ src/engine/saw.test.ts (7 tests) 25ms
+ ✓ src/engine/confidence.test.ts (3 tests) 29ms
+ ✓ src/engine/jamb.test.ts (5 tests) 33ms
+
+ Test Files  7 passed (7)
+      Tests  39 passed (39)
+   Start at  06:17:59
+   Duration  66.56s (transform 8.73s, setup 0ms, collect 11.18s, tests 209ms, environment 8ms, prepare 160.71s)

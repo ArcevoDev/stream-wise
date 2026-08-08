@@ -1,6 +1,6 @@
 ================================================================================
 STREAMWISE — ARCHITECTURE & PRIORITY REGISTER
-Updated: 2026-08-07 · P0 COMPLETE · next build = P1-1 tests · v7
+Updated: 2026-08-07 · P0 COMPLETE · P1-1 tests SHIPPED (2026-08-07) · v8
 Companion to .agent/output.txt (live status dashboard). This file owns the
 PRIORITY ORDER; output.txt owns the STATUS.
 ================================================================================
@@ -131,12 +131,14 @@ P0-5. Audit version linkage + re-scoring path
 ================================================================================
 P1 — OPERATIONAL (P0 is complete; remaining P1 items below)
 ===============================================================================
-  1. Engine unit tests (Vitest): AHP (weights ≈ [0.540, 0.297, 0.163], CR ≈
-     0.007, CR>0.10 rejection), RIASEC 48-item scoring + summary code, BFI
-     reverse-keyed flipping (6−v), SAW ranking + confidence rescale +
-     zero-input fallback, validateJambPrerequisites, explainRecommendation.
-     Then the 100-profile validation simulation → "Validation Testing"
-     thesis evidence. (ZERO tests exist today.)
+  1. [DONE 2026-08-07] Engine unit tests (Vitest): AHP (weights ≈ [0.540,
+     0.297, 0.163], CR ≈ 0.007, CR>0.10 rejection), RIASEC 48-item scoring +
+     summary code, BFI reverse-keyed flipping (6−v), SAW ranking + confidence
+     rescale + zero-input fallback, validateJambPrerequisites,
+     explainRecommendation. 7 test files exist under server/src/engine/
+     (ahp/bfi/riasec/saw/jamb/confidence/rescore) + server/vitest.config.ts;
+     run via `pnpm --filter server test` (vitest run). OPEN follow-up: the
+     100-profile validation simulation → "Validation Testing" thesis evidence.
   2. [DONE] AuditLog writes on LOGIN, SCORES_SUBMITTED, RIASEC_COMPLETED,
      BFI_COMPLETED, RECOMMENDATION_GENERATED, JAMB_VALIDATED — writeAudit
      helper in services/audit.ts; admin audit tab renders them.
@@ -167,9 +169,12 @@ P1 — OPERATIONAL (P0 is complete; remaining P1 items below)
 ================================================================================
 P2 — DEEPER THESIS MATERIAL (after P0 + P1)
 ================================================================================
-  1. Counselor portal: list assigned students (Student.counselorId exists),
-     view results, add notes. SCHOOL_ADMIN / COUNSELOR roles exist in the
-     type system but have NO routes — the only role-gated area is /admin.
+  1. Counselor portal: list assigned students, view results, add notes.
+     SCHOOL_ADMIN / COUNSELOR roles exist in the type system but have NO
+     routes — the only role-gated area is /admin. NOTE (2026-08-07): the old
+     `Student.counselorId` FK was DROPPED from schema.prisma (only survives
+     in the original migration); a counselor portal must re-add assignment
+     (e.g. Student.counselorId → a Counselor/staff entity) before building.
   2. Admin CRUD: manage JAMB catalog (seed-only today), manage students
      (deactivate, reassign counselor).
   3. Individual recommendation CSV/PDF export (print is the only "save").
@@ -203,9 +208,11 @@ KNOWN DECISIONS (recorded so execution does not re-litigate)
 ORDER OF EXECUTION
 ================================================================================
   P0 is COMPLETE (P0-1 schema → P0-2 seams → P0-3 methodology → P0-4 consent →
-  P0-5 audit linkage all shipped). P1-1 (engine tests + 100-profile validation
-  simulation) is the NEXT build. Then P1-5 remaining student UX polish
-  (history page UI, resume-step routing, profile editing) → P2.
-  Test vectors for P1-1 must pin the P0-3e 3-trait personality mapping
+  P0-5 audit linkage all shipped). P1-1 (engine tests) SHIPPED 2026-08-07 —
+  see server/src/engine/*.test.ts. OPEN follow-up: the 100-profile validation
+  simulation → "Validation Testing" thesis evidence. Then P1-5 remaining
+  student UX polish (history page UI, resume-step routing, profile editing,
+  draft autosave) → P2.
+  Test vectors for P1-1 pin the P0-3e 3-trait personality mapping
   (O+C+ES / O+A+ES / E+C+ES) and the derived emotionalStabilityScore.
 ================================================================================
