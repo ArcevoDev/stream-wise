@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { api } from "@/api";
 import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
+import { useAuth } from "@/context/AuthContext";
 import { ClipboardList, ArrowRight, AlertCircle, BarChart3, Loader2 } from "lucide-react";
 import { Button, Input, Label, Card, CardContent } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
@@ -52,16 +54,26 @@ const SELECT_CLASS = "flex h-10 w-full rounded-lg border border-input bg-transpa
 
 type ScoresForm = Record<string, string> & { jss3Average: string };
 
-const EMPTY_FORM: ScoresForm = {
+interface ScoresDraft extends ScoresForm {
+  currentStream: AcademicStream | "";
+}
+
+const EMPTY_DRAFT: ScoresDraft = {
+  currentStream: "",
   jss3Average: "",
   ...Object.fromEntries(CORE_FIELDS.map((f) => [f.formKey, ""])),
 };
 
 export default function Scores() {
   const navigate = useNavigate();
+  const { student } = useAuth();
   const [checkingConsent, setCheckingConsent] = useState(true);
-  const [currentStream, setCurrentStream] = useState<AcademicStream | "">("");
-  const [scores, setScores] = useState<ScoresForm>(EMPTY_FORM);
+  const [draft, setDraft, clearDraft] = useLocalDraft<ScoresDraft>(
+    "dss_draft_scores",
+    EMPTY_DRAFT,
+    student?.id,
+  );
+  const { currentStream, ...scores } = draft;
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -102,9 +114,11 @@ export default function Scores() {
 
   function handleStreamChange(e: ChangeEvent<HTMLSelectElement>): void {
     const next = e.target.value as AcademicStream | "";
-    setCurrentStream(next);
-    setScores((prev) => {
-      const preserved: ScoresForm = { jss3Average: prev.jss3Average };
+    setDraft((prev) => {
+      const preserved: ScoresDraft = {
+        currentStream: next,
+        jss3Average: prev.jss3Average,
+      };
       for (const f of CORE_FIELDS) preserved[f.formKey] = prev[f.formKey] ?? "";
       if (next) for (const f of STREAM_FIELDS[next]) preserved[f.formKey] = "";
       return preserved;
@@ -115,7 +129,7 @@ export default function Scores() {
   function handleChange(e: ChangeEvent<HTMLInputElement>): void {
     const { name, value } = e.target;
     if (value !== "" && (isNaN(Number(value)) || Number(value) < 0 || Number(value) > 100)) return;
-    setScores((prev) => ({ ...prev, [name]: value }));
+    setDraft((prev) => ({ ...prev, [name]: value }));
     setError("");
   }
 
@@ -142,6 +156,7 @@ export default function Scores() {
         jss3OverallAverage: parseFloat(scores.jss3Average),
       };
       await api.post("/profile/scores", payload);
+      clearDraft(); // submitted — drop the autosave draft so a refresh can't re-post it
       toast.success("Academic scores saved!", {
         description: "Moving on to the Interest Assessment.",
       });

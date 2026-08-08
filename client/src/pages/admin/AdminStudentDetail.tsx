@@ -85,7 +85,6 @@ interface StudentDetail {
   lastLoginAt: string | null;
   createdAt: string;
   school: { id: string; name: string } | null;
-  counselor: { id: string; fullName: string } | null;
   academicProfile: AcademicProfile | null;
   subjectScores: SubjectScore[];
   riasecProfile: RiasecProfile | null;

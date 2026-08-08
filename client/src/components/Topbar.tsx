@@ -59,6 +59,8 @@ export default function Topbar() {
       .toUpperCase()
       .slice(0, 2) ?? "?";
 
+  const roleLabel = role && role !== "STUDENT" ? role.replaceAll("_", " ").toLowerCase() : "student";
+
   const studentLinks: FacetNavLink[] = STEPS.map((s) => ({
     href: s.path,
     label: s.label,
@@ -115,7 +117,7 @@ export default function Topbar() {
                 <p className="text-sm font-medium text-foreground">{student?.fullName}</p>
                 <p className="text-xs font-normal text-muted-foreground">{student?.email}</p>
                 <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  {role ?? "STUDENT"}
+                  {roleLabel}
                 </p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -137,6 +139,11 @@ export default function Topbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {role !== "STUDENT" && (
+            <span className="hidden text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:inline">
+              {roleLabel}
+            </span>
+          )}
         </>
       ) : (
         <>
@@ -153,7 +160,7 @@ export default function Topbar() {
 
   return (
     <Navbar
-      variant="sticky"
+      variant="pill"
       brand={brand}
       links={links}
       actions={actions}

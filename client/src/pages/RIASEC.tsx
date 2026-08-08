@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { api } from "@/api";
 import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
+import { useAuth } from "@/context/AuthContext";
 import type { RiasecLetter, RiasecQuestion } from "@/types/index";
 import { Brain, ChevronRight, ChevronLeft, Loader2, AlertCircle, ArrowRight } from "lucide-react";
 import { Button, Card, CardContent } from "@arcevo/facet-components";
@@ -42,12 +44,22 @@ const TYPE_NAMES: Record<RiasecLetter, string> = {
 
 const TYPES: RiasecLetter[] = ["R", "I", "A", "S", "E", "C"];
 
+interface RiasecDraft {
+  responses: Record<number, number>;
+  page: number;
+}
+
 export default function RIASEC() {
   const navigate = useNavigate();
+  const { student } = useAuth();
 
   const [questions, setQuestions] = useState<RiasecQuestion[]>([]);
-  const [responses, setResponses] = useState<Record<number, number>>({});
-  const [page, setPage] = useState(0); // 0-5
+  const [draft, setDraft, clearDraft] = useLocalDraft<RiasecDraft>(
+    "dss_draft_riasec",
+    { responses: {}, page: 0 },
+    student?.id,
+  );
+  const { responses, page } = draft;
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -73,7 +85,7 @@ export default function RIASEC() {
   const totalExpected = questions.length;
 
   function handleRate(questionId: number, value: number): void {
-    setResponses((prev) => ({ ...prev, [questionId]: value }));
+    setDraft((prev) => ({ ...prev, responses: { ...prev.responses, [questionId]: value } }));
     setError("");
   }
 
@@ -89,7 +101,7 @@ export default function RIASEC() {
         duration: 2000,
       });
     }
-    setPage((p) => p + 1);
+    setDraft((prev) => ({ ...prev, page: prev.page + 1 }));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -113,6 +125,7 @@ export default function RIASEC() {
         });
 
       await api.post("/riasec/submit", { responses: orderedResponses });
+      clearDraft(); // submitted — drop the autosave draft so a refresh can't re-post it
       toast.success("Interest profile saved!", {
         description: "Your RIASEC summary code has been calculated.",
       });
@@ -232,7 +245,7 @@ export default function RIASEC() {
                     variant="secondary"
                     className="flex-1"
                     onClick={() => {
-                      setPage((p) => p - 1);
+                      setDraft((prev) => ({ ...prev, page: prev.page - 1 }));
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                   >

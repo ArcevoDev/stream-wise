@@ -173,7 +173,7 @@ export default function ConsentLanding() {
 
   const nav = (
     <Navbar
-      variant="sticky"
+      variant="pill"
       brand={
         <div className="flex items-center gap-3">
           <LasuLogo className="h-9 w-9" />
