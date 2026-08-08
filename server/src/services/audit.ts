@@ -7,8 +7,8 @@
 // consistent across modules.
 //
 // Actions used:
-//   LOGIN | SCORES_SUBMITTED | RIASEC_COMPLETED | BFI_COMPLETED
-//   RECOMMENDATION_GENERATED | JAMB_VALIDATED
+//   LOGIN | CONSENT_RECORDED | SCORES_SUBMITTED | RIASEC_COMPLETED |
+//   BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED
 // ============================================================================
 
 import type { Request } from "express";

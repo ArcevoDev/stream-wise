@@ -169,6 +169,18 @@ export const recordConsent = asyncHandler<Request<Record<string, never>, unknown
       },
     });
 
+    // Consent is the ethics backbone of the study — record it in the audit
+    // trail so the four granted points + version are reconstructable.
+    await writeAudit(req, {
+      action: "CONSENT_RECORDED",
+      studentId,
+      metadata: {
+        consentStatus: student.consentStatus,
+        consentVersion: student.consentVersion ?? null,
+        points: { consentPoint1, consentPoint2, consentPoint3, consentPoint4 },
+      },
+    });
+
     res.json({
       consentStatus: student.consentStatus,
       consentVersion: student.consentVersion,

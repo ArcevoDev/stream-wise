@@ -645,8 +645,8 @@ model AuditLog {
   actorRole UserRole?
 
   /// Coarse action category. Recommended values:
-  /// LOGIN | SCORES_SUBMITTED | RIASEC_COMPLETED | BFI_COMPLETED
-  /// RECOMMENDATION_GENERATED | JAMB_VALIDATED
+  /// LOGIN | CONSENT_RECORDED | SCORES_SUBMITTED | RIASEC_COMPLETED |
+  /// BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED
   action String
 
   /// Arbitrary structured payload — keeps the table generic while
