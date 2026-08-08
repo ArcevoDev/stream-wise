@@ -251,72 +251,46 @@ const ACTIVE_SESSION = "2025/2026";
  */
 const SUBJECT_CATALOG: {
   subject: SubjectType;
-  code: string;
   name: string;
   stream: AcademicStreamType | null;
   isCore?: boolean;
-  isTrade?: boolean;
 }[] = [
   // ── COMPULSORY CORE ───────────────────────────────────────
-  { subject: Subject.ENGLISH_LANGUAGE, code: "ENG", name: "English Language", stream: null, isCore: true },
-  { subject: Subject.MATHEMATICS, code: "MTH", name: "Mathematics", stream: null, isCore: true },
-  { subject: Subject.CITIZENSHIP_AND_HERITAGE, code: "CHH", name: "Citizenship and Heritage", stream: null, isCore: true },
-  { subject: Subject.DIGITAL_TECHNOLOGIES, code: "DGT", name: "Digital Technologies", stream: null, isCore: true },
+  { subject: Subject.ENGLISH_LANGUAGE, name: "English Language", stream: null, isCore: true },
+  { subject: Subject.MATHEMATICS, name: "Mathematics", stream: null, isCore: true },
+  { subject: Subject.CITIZENSHIP_AND_HERITAGE, name: "Citizenship and Heritage", stream: null, isCore: true },
+  { subject: Subject.DIGITAL_TECHNOLOGIES, name: "Digital Technologies", stream: null, isCore: true },
 
   // ── SCIENCE STREAM ────────────────────────────────────────
-  { subject: Subject.BIOLOGY, code: "BIO", name: "Biology", stream: AcademicStream.SCIENCE },
-  { subject: Subject.CHEMISTRY, code: "CHM", name: "Chemistry", stream: AcademicStream.SCIENCE },
-  { subject: Subject.PHYSICS, code: "PHY", name: "Physics", stream: AcademicStream.SCIENCE },
-  { subject: Subject.FURTHER_MATHEMATICS, code: "FMH", name: "Further Mathematics", stream: AcademicStream.SCIENCE },
-  { subject: Subject.AGRICULTURAL_SCIENCE, code: "AGR", name: "Agricultural Science", stream: AcademicStream.SCIENCE },
-  { subject: Subject.ANIMAL_HUSBANDRY, code: "ANH", name: "Animal Husbandry", stream: AcademicStream.SCIENCE },
-  { subject: Subject.TECHNICAL_DRAWING, code: "TDR", name: "Technical Drawing", stream: AcademicStream.SCIENCE },
-  { subject: Subject.FOOD_AND_NUTRITION, code: "FDN", name: "Food and Nutrition", stream: AcademicStream.SCIENCE },
-  { subject: Subject.HOME_MANAGEMENT, code: "HOM", name: "Home Management", stream: AcademicStream.SCIENCE },
-  { subject: Subject.BASIC_SCIENCE, code: "BSC", name: "Basic Science", stream: AcademicStream.SCIENCE },
+  { subject: Subject.BIOLOGY, name: "Biology", stream: AcademicStream.SCIENCE },
+  { subject: Subject.CHEMISTRY, name: "Chemistry", stream: AcademicStream.SCIENCE },
+  { subject: Subject.PHYSICS, name: "Physics", stream: AcademicStream.SCIENCE },
+  { subject: Subject.FURTHER_MATHEMATICS, name: "Further Mathematics", stream: AcademicStream.SCIENCE },
+  { subject: Subject.AGRICULTURAL_SCIENCE, name: "Agricultural Science", stream: AcademicStream.SCIENCE },
+  { subject: Subject.ANIMAL_HUSBANDRY, name: "Animal Husbandry", stream: AcademicStream.SCIENCE },
+  { subject: Subject.TECHNICAL_DRAWING, name: "Technical Drawing", stream: AcademicStream.SCIENCE },
+  { subject: Subject.FOOD_AND_NUTRITION, name: "Food and Nutrition", stream: AcademicStream.SCIENCE },
+  { subject: Subject.HOME_MANAGEMENT, name: "Home Management", stream: AcademicStream.SCIENCE },
 
   // ── HUMANITIES STREAM ─────────────────────────────────────
-  { subject: Subject.LITERATURE_IN_ENGLISH, code: "LIT", name: "Literature in English", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.GOVERNMENT, code: "GOV", name: "Government", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.HISTORY, code: "HIS", name: "History", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.GEOGRAPHY, code: "GEO", name: "Geography", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.CHRISTIAN_RELIGIOUS_STUDIES, code: "CRS", name: "Christian Religious Studies", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.ISLAMIC_RELIGIOUS_STUDIES, code: "IRS", name: "Islamic Religious Studies", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.FRENCH, code: "FRE", name: "French", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.YORUBA, code: "YOR", name: "Yoruba", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.IGBO, code: "IGB", name: "Igbo", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.HAUSA, code: "HAU", name: "Hausa", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.ARABIC, code: "ARA", name: "Arabic", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.VISUAL_ARTS, code: "VAR", name: "Visual Arts", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.MUSIC, code: "MUS", name: "Music", stream: AcademicStream.HUMANITIES },
-  { subject: Subject.SOCIAL_STUDIES, code: "SOS", name: "Social Studies", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.LITERATURE_IN_ENGLISH, name: "Literature in English", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.GOVERNMENT, name: "Government", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.HISTORY, name: "History", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.GEOGRAPHY, name: "Geography", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.CHRISTIAN_RELIGIOUS_STUDIES, name: "Christian Religious Studies", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.ISLAMIC_RELIGIOUS_STUDIES, name: "Islamic Religious Studies", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.FRENCH, name: "French", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.YORUBA, name: "Yoruba", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.IGBO, name: "Igbo", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.HAUSA, name: "Hausa", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.ARABIC, name: "Arabic", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.VISUAL_ARTS, name: "Visual Arts", stream: AcademicStream.HUMANITIES },
+  { subject: Subject.MUSIC, name: "Music", stream: AcademicStream.HUMANITIES },
 
   // ── BUSINESS STREAM ───────────────────────────────────────
-  { subject: Subject.ECONOMICS, code: "ECO", name: "Economics", stream: AcademicStream.BUSINESS },
-  { subject: Subject.COMMERCE, code: "COM", name: "Commerce", stream: AcademicStream.BUSINESS },
-  { subject: Subject.FINANCIAL_ACCOUNTING, code: "FAC", name: "Financial Accounting", stream: AcademicStream.BUSINESS },
-  { subject: Subject.BOOK_KEEPING, code: "BOK", name: "Book Keeping", stream: AcademicStream.BUSINESS },
-  { subject: Subject.MARKETING, code: "MKT", name: "Marketing", stream: AcademicStream.BUSINESS },
-  { subject: Subject.OFFICE_PRACTICE, code: "OFP", name: "Office Practice", stream: AcademicStream.BUSINESS },
-  { subject: Subject.STORE_MANAGEMENT, code: "STM", name: "Store Management", stream: AcademicStream.BUSINESS },
-  { subject: Subject.DATA_PROCESSING, code: "DTP", name: "Data Processing", stream: AcademicStream.BUSINESS },
-  { subject: Subject.BUSINESS_STUDIES, code: "BST", name: "Business Studies", stream: AcademicStream.BUSINESS },
-
-  // ── VOCATIONAL TRADE SUBJECTS (NERDC — pick one) ──────────
-  { subject: Subject.TRADE_WOODWORK, code: "TWW", name: "Trade: Woodwork", stream: null, isTrade: true },
-  { subject: Subject.TRADE_METALWORK, code: "TMW", name: "Trade: Metalwork", stream: null, isTrade: true },
-  { subject: Subject.TRADE_ELECTRONICS, code: "TEL", name: "Trade: Electronics", stream: null, isTrade: true },
-  { subject: Subject.TRADE_AUTO_MECHANICS, code: "TAM", name: "Trade: Auto Mechanics", stream: null, isTrade: true },
-  { subject: Subject.TRADE_COSMETOLOGY, code: "TCS", name: "Trade: Cosmetology", stream: null, isTrade: true },
-  { subject: Subject.TRADE_CATERING_CRAFT, code: "TCC", name: "Trade: Catering Craft", stream: null, isTrade: true },
-  { subject: Subject.TRADE_GARMENT_MAKING, code: "TGM", name: "Trade: Garment Making", stream: null, isTrade: true },
-  { subject: Subject.TRADE_PLUMBING, code: "TPL", name: "Trade: Plumbing", stream: null, isTrade: true },
-  { subject: Subject.TRADE_BUILDING_CONSTRUCTION, code: "TBC", name: "Trade: Building Construction", stream: null, isTrade: true },
-  { subject: Subject.TRADE_COMPUTER_CRAFT, code: "TCC2", name: "Trade: Computer Craft", stream: null, isTrade: true },
-
-  // ── GENERAL / CROSS-STREAM ────────────────────────────────
-  { subject: Subject.CIVIC_EDUCATION, code: "CVE", name: "Civic Education (legacy)", stream: null },
-  { subject: Subject.COMPUTER_STUDIES, code: "CPS", name: "Computer Studies", stream: null },
+  { subject: Subject.ECONOMICS, name: "Economics", stream: AcademicStream.BUSINESS },
+  { subject: Subject.COMMERCE, name: "Commerce", stream: AcademicStream.BUSINESS },
+  { subject: Subject.FINANCIAL_ACCOUNTING, name: "Financial Accounting", stream: AcademicStream.BUSINESS },
 ];
 
 async function seedVersionedCatalogs(): Promise<void> {
@@ -332,15 +306,12 @@ async function seedVersionedCatalogs(): Promise<void> {
   // Rebuild the subject catalog for this session (idempotent).
   await prisma.subjectCatalog.deleteMany({ where: { academicSessionId: session.id } });
   await prisma.subjectCatalog.createMany({
-    data: SUBJECT_CATALOG.map((s, idx) => ({
+    data: SUBJECT_CATALOG.map((s) => ({
       academicSessionId: session.id,
       subject: s.subject,
-      subjectCode: s.code,
       name: s.name,
       streamCategory: s.stream,
       isCore: s.isCore ?? false,
-      isTradeSubject: s.isTrade ?? false,
-      sortOrder: idx,
     })),
   });
 

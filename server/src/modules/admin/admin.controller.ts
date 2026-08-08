@@ -246,7 +246,6 @@ export const getStudentDetail = asyncHandler(async (req: Request, res: Response)
       createdAt: true,
       updatedAt: true,
       school: { select: { id: true, name: true } },
-      counselor: { select: { id: true, fullName: true } },
       academicProfile: true,
       subjectScores: {
         orderBy: [{ level: "asc" }, { subject: "asc" }],

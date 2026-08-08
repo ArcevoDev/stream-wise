@@ -142,7 +142,9 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
         extraversionScore: personalityProfile.extraversionScore,
         agreeablenessScore: personalityProfile.agreeablenessScore,
         // P0-3e: neuroticism included as inverted Emotional Stability (5-factor).
-        emotionalStabilityScore: 100 - personalityProfile.neuroticismScore,
+        // The value is persisted on the profile at assessment time (bfi.controller),
+        // so historical recommendations use the exact stability recorded then.
+        emotionalStabilityScore: personalityProfile.emotionalStabilityScore,
       }
     : undefined;
 

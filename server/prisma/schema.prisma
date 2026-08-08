@@ -120,6 +120,16 @@ enum AcademicLevel {
 /// NERDC 2025 compulsory core: ENGLISH_LANGUAGE, MATHEMATICS,
 /// CITIZENSHIP_AND_HERITAGE, DIGITAL_TECHNOLOGIES + one TRADE_SUBJECT.
 /// Stream-specific and elective subjects follow below.
+///
+/// P0-3f cleanup (2026-08-07): legacy/unused values removed — CIVIC_EDUCATION
+/// (superseded by CITIZENSHIP_AND_HERITAGE), SOCIAL_STUDIES / BUSINESS_STUDIES /
+/// BASIC_SCIENCE (the "JSS3 baseline" trio that was never collected — JSS3 is
+/// a single overall average), COMPUTER_STUDIES / DATA_PROCESSING /
+/// OFFICE_PRACTICE / STORE_MANAGEMENT / BOOK_KEEPING / MARKETING (catalog-only,
+/// never in a JAMB course or the client form), and the 10 TRADE_* values
+/// (AcademicProfile.tradeSubjectChosen is a nullable field that accepts a
+/// Subject, but no flow writes it; the NERDC trade requirement is captured by
+/// the field, not an enum expansion).
 enum Subject {
   // ── COMPULSORY CORE (all students, NERDC 2025/2026) ──────────────────────
   ENGLISH_LANGUAGE
@@ -152,35 +162,11 @@ enum Subject {
   ARABIC
   VISUAL_ARTS
   MUSIC
-  SOCIAL_STUDIES // retained for JSS3 baseline input
 
   // ── BUSINESS / COMMERCIAL STREAM ─────────────────────────────────────────
   ECONOMICS
   COMMERCE
   FINANCIAL_ACCOUNTING
-  BOOK_KEEPING
-  MARKETING
-  OFFICE_PRACTICE
-  STORE_MANAGEMENT
-  DATA_PROCESSING
-  BUSINESS_STUDIES // retained for JSS3 baseline input
-
-  // ── VOCATIONAL TRADE SUBJECTS (NERDC 2025 — pick one) ────────────────────
-  TRADE_WOODWORK
-  TRADE_METALWORK
-  TRADE_ELECTRONICS
-  TRADE_AUTO_MECHANICS
-  TRADE_COSMETOLOGY
-  TRADE_CATERING_CRAFT
-  TRADE_GARMENT_MAKING
-  TRADE_PLUMBING
-  TRADE_BUILDING_CONSTRUCTION
-  TRADE_COMPUTER_CRAFT
-
-  // ── GENERAL / CROSS-STREAM ───────────────────────────────────────────────
-  BASIC_SCIENCE // JSS3 baseline only; not WAEC-entered
-  CIVIC_EDUCATION // legacy; superseded by CITIZENSHIP_AND_HERITAGE
-  COMPUTER_STUDIES
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,8 +184,6 @@ model AcademicSession {
   name      String    @unique // e.g. "2025/2026"
   label     String? // e.g. "2025/2026 NERDC curriculum"
   isActive  Boolean   @default(false)
-  startedAt DateTime?
-  endedAt   DateTime?
   createdAt DateTime  @default(now())
 
   subjects   SubjectCatalog[]
@@ -217,13 +201,9 @@ model SubjectCatalog {
   academicSession   AcademicSession @relation(fields: [academicSessionId], references: [id], onDelete: Cascade)
 
   subject        Subject // stable enum value, e.g. ENGLISH_LANGUAGE
-  subjectCode    String // e.g. "ENG", "MTH", "BIO" — display code
   name           String // display name
   streamCategory AcademicStream?
   isCore         Boolean         @default(false)
-  isTradeSubject Boolean         @default(false)
-  isActive       Boolean         @default(true)
-  sortOrder      Int             @default(0)
 
   createdAt DateTime @default(now())
 
@@ -262,24 +242,17 @@ model AhpWeightSet {
 // INSTITUTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// A secondary school that can host multiple students and counselors.
+/// A secondary school that can host multiple students.
 /// Supports the multi-school deployment scenario (§1.6 Schools stakeholder).
 model School {
   id         String  @id @default(uuid())
-  name       String
-  state      String?
-  lga        String? // Local Government Area
-  schoolType String? // "Public" | "Private" | "Federal Unity College"
-  address    String?
+  name       String  @unique
 
-  students   Student[]
-  counselors Counselor[]
+  students Student[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([name, state])
-  @@index([state])
   @@map("schools")
 }
 
@@ -308,10 +281,6 @@ model Student {
   /// Optional link to a School entity (multi-school deployments).
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-
-  /// Optional link to an assigned guidance counselor (§1.6).
-  counselorId String?
-  counselor   Counselor? @relation(fields: [counselorId], references: [id], onDelete: SetNull)
 
   /// Career aspiration as free text — used by the JAMB validator (FR-08).
   /// E.g. "Medicine and Surgery", "Law", "Accounting".
@@ -343,38 +312,9 @@ model Student {
   auditLogs          AuditLog[]
 
   @@index([schoolId])
-  @@index([counselorId])
   @@index([email])
   @@index([arcId])
   @@map("students")
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CORE IDENTITY — COUNSELOR
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Guidance counselor — stakeholder class per §1.6.
-/// Assigned students can be reviewed via the counselor dashboard.
-model Counselor {
-  id            String   @id @default(uuid())
-  fullName      String
-  email         String   @unique
-  passwordHash  String
-  phone         String?
-  qualification String? // e.g. "B.Ed Guidance & Counselling"
-  role          UserRole @default(COUNSELOR)
-
-  schoolId String?
-  school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
-
-  students Student[]
-
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([schoolId])
-  @@map("counselors")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -519,6 +459,11 @@ model PersonalityProfile {
   extraversionScore      Float @default(0)
   agreeablenessScore     Float @default(0)
   neuroticismScore       Float @default(0)
+  /// P0-3e: derived Emotional Stability (100 − neuroticism). Persisted as the
+  /// 5-factor research record; the SAW engine consumes it directly. Stored so
+  /// historical profiles keep the exact stability value used at assessment
+  /// time (100 − neuroticism may drift if the instrument is re-versioned).
+  emotionalStabilityScore Float @default(0)
 
   assessedAt DateTime @default(now())
   updatedAt  DateTime @updatedAt

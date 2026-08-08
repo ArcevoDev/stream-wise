@@ -53,7 +53,7 @@ export const register = asyncHandler<Request<Record<string, never>, unknown, Reg
     let schoolId: string | null = null;
     if (schoolName?.trim()) {
       const trimmed = schoolName.trim();
-      const existing = await prisma.school.findFirst({ where: { name: trimmed } });
+      const existing = await prisma.school.findUnique({ where: { name: trimmed } });
       const school = existing ?? (await prisma.school.create({ data: { name: trimmed } }));
       schoolId = school.id;
     }
@@ -124,7 +124,6 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
       careerAspiration: true,
       role: true,
       schoolId: true,
-      counselorId: true,
       consentStatus: true,
       consentVersion: true,
       consentGrantedAt: true,
