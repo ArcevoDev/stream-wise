@@ -1,6 +1,6 @@
 ================================================================================
 DSS PROJECT — LIVE STATUS DASHBOARD & PRIORITY ROADMAP
-Generated: 2026-08-07 · v8 (P0 audit: wiring-gap fixes + engine test corrections)
+Generated: 2026-08-08 · v9 (P1-1 engine tests SHIPPED; schema/working-tree reconciliation)
 Companion to .agent/priority.txt (owns PRIORITY ORDER) — this file owns STATUS.
 ================================================================================
 
@@ -43,14 +43,14 @@ clean. saw.test.ts customMapping typed with StreamTraitMapping (was readonly
 tuple widening).
 
 Non-blocking notes for the thesis (NOT changed this pass): SubjectCatalog
-isCore/isTradeSubject/isActive/sortOrder seeded but only streamCategory read
-at runtime (controller hardcodes CORE_SUBJECTS = English/Maths); no client
-endpoint serves the catalog (Scores.tsx still hardcodes STREAM_FIELDS);
-DEFAULT_STREAM_TRAIT_MAPPING + DEFAULT_RIASEC_STREAM_MAPPING are live config
-defaults not yet DB rows (P0-1e); fallback weights [0.540,0.297,0.163] in
-recommend.controller are documented dev safety nets; no photo avatar on the
-topbar (Student has no avatar column — initials Avatar from facet-components
-is used; photo avatars deferred to P2/P3).
+isCore is seeded and read at runtime, but the controller still hardcodes
+CORE_SUBJECTS = English/Maths and only streamCategory is consumed per-row;
+no client endpoint serves the catalog (Scores.tsx still hardcodes
+STREAM_FIELDS); DEFAULT_STREAM_TRAIT_MAPPING + DEFAULT_RIASEC_STREAM_MAPPING
+are live config defaults not yet DB rows (P0-1e); fallback weights
+[0.540,0.297,0.163] in recommend.controller are documented dev safety nets;
+no photo avatar on the topbar (Student has no avatar column — initials Avatar
+from facet-components is used; photo avatars deferred to P2/P3).
 
 ================================================================================
 WHAT THE SYSTEM IS
@@ -138,8 +138,12 @@ P0 — ARCHITECTURE STATUS (foundation)
 ================================================================================
 P1 — OPERATIONAL STATUS
 ================================================================================
-  1. Engine unit tests ............................... [OPEN] ZERO tests exist.
-     Vitest not configured. Highest-value next build (thesis "Validation Testing").
+  1. Engine unit tests ............................... [DONE 2026-08-07]
+     7 test files under server/src/engine/ (ahp/bfi/riasec/saw/jamb/
+     confidence/rescore) + server/vitest.config.ts — 39 tests passing via
+     `pnpm --filter server test` (recorded in .agent/test-output.txt).
+     OPEN follow-up: the 100-profile validation simulation → thesis
+     "Validation Testing" evidence (§3.8).
   2. AuditLog writes ................................. [DONE] writeAudit helper
      (services/audit.ts) fires LOGIN, SCORES_SUBMITTED, RIASEC_COMPLETED,
      BFI_COMPLETED, RECOMMENDATION_GENERATED, JAMB_VALIDATED. Admin audit tab
@@ -227,15 +231,17 @@ WHAT'S ALREADY STRONG (keep — thesis strengths)
 ================================================================================
 RECOMMENDED PRIORITIES TO BUILD NEXT (ranked)
 ================================================================================
-  1. [NEXT] Vitest unit tests for the decision engine + 100-profile validation
-     simulation (thesis "Validation Testing" evidence). Engine + rescore helpers
-     are now fully versioned/data-driven and BFI returns the full 5-factor
-     profile (incl. emotionalStabilityScore) — test vectors should pin the
-     new 3-trait personality mapping.
+  1. [NEXT] 100-profile validation simulation (thesis "Validation Testing"
+     evidence, §3.8). The engine unit tests are SHIPPED (39 passing); this
+     simulation exercises the full re-scoring + SAW path against synthetic
+     profiles at scale. Test vectors already pin the P0-3e 3-trait
+     personality mapping (O+C+ES / O+A+ES / E+C+ES) + emotionalStabilityScore.
   2. Student UX polish: history page UI (endpoint is paginated + ready),
      resume-step routing, profile editing (career aspiration, school).
-  3. P2-1 Counselor portal (roles + Student.counselorId exist; staff roles now
-     LAND on /admin read-only, but there are no counselor-specific routes yet).
+     Partial: draft autosave for /scores + /riasec is live (useLocalDraft).
+  3. P2-1 Counselor portal. NOTE: Student.counselorId was DROPPED from the
+     schema (2026-08-08); a counselor portal must re-add assignment first.
+     Staff roles still land on /admin read-only with no counselor routes.
   4. P2-2 Admin CRUD: manage JAMB catalog, deactivate/reassign students.
   5. P2-3 Individual recommendation CSV/PDF export.
   6. P2-4 Auth hardening: localStorage JWT is XSS-exposed — document the

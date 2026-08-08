@@ -56,8 +56,10 @@ SS2 students using an AHP-SAW multi-criteria decision engine.
    and derived `emotionalStabilityScore` are pinned by the upcoming test
    vectors.
 7. **Deployment:** client builds to Vercel; server runs behind a reverse
-   proxy. `prisma generate` must be part of any deploy (Prisma 7 generated
-   client is committed under `server/prisma/generated`).
+   proxy. `prisma generate` must be part of any deploy — the Prisma 7
+   generated client is NOT committed (`.gitignore` excludes
+   `server/prisma/generated/`); only `server/enums` (the generated enum
+   module the client imports) is re-exported via the server package.
 8. **FIX (Bug x.y) comments** are the codebase's way of marking known
    workarounds — resolve them when the underlying issue is fixed, and delete
    the comment when you do.
