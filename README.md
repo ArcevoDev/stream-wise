@@ -48,8 +48,8 @@ cd ..
 pnpm dev             # client :5173 · server :5000
 ```
 
-`prisma generate` must run on every fresh checkout (the Prisma 7 generated
-client is committed under `server/prisma/generated`).
+The Prisma 7 generated client is **not committed** : run `pnpm prisma
+generate` on every fresh checkout (the server postinstall also does it).
 
 ## Demo role accounts (research access story)
 
@@ -124,25 +124,38 @@ weight constants. `algorithmVersion = ahp-saw-v1.1`.
 | ------ | ----- | ---- | ------- |
 | POST | `/api/auth/register` | public | Create student account |
 | POST | `/api/auth/login` | public | JWT login |
+| POST | `/api/auth/guest` | public | Synthetic reviewer session (no DB row) |
 | GET | `/api/auth/profile` | token | Identity + consent status |
 | POST | `/api/auth/consent` | token | Record 4-point consent |
-| GET | `/api/auth/role` | token | Introspect own role claim |
+| GET | `/api/auth/progress` | STUDENT | Resume-step routing |
+| GET | `/api/auth/role` | staff roles | Introspect own role claim |
 | POST | `/api/profile/scores` | STUDENT | Save academic scores |
-| GET | `/api/riasec/questions` | STUDENT | Fetch 48 items |
+| GET | `/api/profile` | STUDENT | Own academic profile |
+| GET | `/api/riasec/questions` | public | Fetch 48 items |
 | POST | `/api/riasec/submit` | STUDENT | Submit + compute profile |
-| GET | `/api/bfi/questions` | STUDENT | Fetch 20 items |
+| GET | `/api/riasec` | STUDENT | Own RIASEC profile |
+| GET | `/api/bfi/questions` | public | Fetch 20 items |
 | POST | `/api/bfi/submit` | STUDENT | Submit + compute profile |
+| GET | `/api/bfi` | STUDENT | Own BFI profile |
 | POST | `/api/recommend` | STUDENT | Generate recommendation (POST, no GET side effect) |
 | GET | `/api/recommend/history` | STUDENT | Paginated history |
-| GET | `/api/jamb/catalog` | STUDENT | University course catalog |
+| GET | `/api/recommend/history/:id` | STUDENT | Single recommendation |
+| DELETE | `/api/recommend/history` | STUDENT | Clear own history |
+| GET | `/api/jamb/catalog` | public | University course catalog |
 | POST | `/api/jamb/validate` | STUDENT | Validate subject combination |
-| GET | `/api/admin/*` | ADMIN (or staff read-only) | Stats, analytics, students, audit, CSV |
+| GET | `/api/jamb/history` | STUDENT | JAMB validation history |
+| GET | `/api/admin/stats` | staff | Dashboard stats |
+| GET | `/api/admin/analytics` | staff | Analytics charts |
+| GET | `/api/admin/students` | staff | Paginated student list |
+| GET | `/api/admin/students/:id` | staff | Student detail |
+| GET | `/api/admin/audit` | staff | Audit log |
+| GET | `/api/admin/export/csv` | ADMIN | CSV export |
 | POST | `/api/admin/rescore/:studentId` | ADMIN | Re-score from raw rows |
 
 Errors are a unified `{ error: string, details?: [...] }` envelope. Route auth
 is `authenticateToken` then `requireRole(...)`.
 
-## Test plan
+## Tests
 
 Engine code is deliberately dependency-free so it can be unit tested. **Vitest
 is configured and running (P1-1, shipped 2026-08-07)** : 44 tests across 8
@@ -156,26 +169,32 @@ derived `emotionalStabilityScore`.
 
 ## Deploy notes
 
-- Client builds to Vercel as a static SPA; the server runs as a serverless
-  function on Netlify (see `netlify.toml` : build = `pnpm --filter server
-  build`, functions dir = `server/functions`, `/api/*` rewrites to the
-  `api` function via `serverless-http`). `VITE_API_BASE_URL` in the client
-  env points at the API origin in production.
+- **Client → Vercel** as a static SPA. `vercel.json` sets `buildCommand =
+  "pnpm build"` (tsc -b && vite build), `outputDirectory = "dist"`, the SPA
+  rewrite, and security headers. The Root Directory is **not** in vercel.json
+  : set it to `client` in the Vercel dashboard (Project → Settings → General).
+- **Server → Netlify** as a serverless function. `netlify.toml` sets
+  `build = "pnpm --filter server build"`, publish dir `public`, functions dir
+  `server/functions`, and rewrites `/api/*` to the `api` function (wired via
+  `serverless-http`). `server/functions/api.ts` imports the compiled
+  `dist/src/app.js`.
 - Netlify env vars required: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`,
   `NODE_ENV=production`. Set `VITE_API_BASE_URL` in Vercel to the Netlify
-  site origin.
-- `prisma generate` + `prisma migrate deploy` must run on server deploy.
-  (postinstall runs generate; run `pnpm --filter server prisma:deploy`
-  manually once — the DB already has migrations from Railway.)
-- The client imports `server/enums` (the server package exports generated
-  Prisma enums) : the monorepo build pipeline must keep that export intact.
+  site origin (e.g. `https://streamwise-dss.netlify.app`).
+- Netlify does **not** run database migrations and does **not** host
+  Postgres. Point `DATABASE_URL` at any Postgres host (Neon / Supabase /
+  self-hosted) and apply migrations from your terminal once:
+  `pnpm --filter server prisma:deploy` (then `seed` + `seed:roles` on a fresh
+  DB). The Netlify build only runs `prisma generate` (via postinstall); the
+  generated client is not committed.
+- The client keeps its domain enums local (`client/src/types/index.ts`), so
+  the Vercel static build has zero coupling to `prisma generate`.
 - CORS allowlist is configurable via `CLIENT_URL` (comma-separated) plus
   `*.vercel.app`, `*.netlify.app`, and `*.arcevocirqle.com.ng` subdomains.
 
 ## Docs
 
 - `AGENTS.md` : the always-read agent contract (current-state rules).
-- `.agent/output.txt` : live status dashboard + priority roadmap.
-- `.agent/priority.txt` : architecture & priority register.
 - `CLAUDE.md` : original rebuild spec (aspirational; where it conflicts with
   the code, AGENTS.md + the code are reality).
+- `todo.txt` (repo root, untracked) : session scratchpad / current work plan.

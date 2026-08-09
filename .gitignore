@@ -29,6 +29,9 @@ pnpm-debug.log*
 # Agent session scratch (session-only; never committed)
 .agent/
 
+# Session scratchpad (current work plan; never committed)
+todo.txt
+
 # IDE
 .vscode/
 .idea/
