@@ -183,7 +183,7 @@ export default function Results() {
             <Trophy size={12} />
             Step 4 · Your Results
           </span>
-          <h1 className="text-3xl font-black text-foreground">
+          <h1 className="text-2xl font-black text-foreground sm:text-3xl">
             Your Recommended Stream:{" "}
             <span className="text-primary">{result.topStream}</span>
           </h1>
@@ -270,7 +270,7 @@ export default function Results() {
               <Scale size={14} className="text-primary" />
               <h3 className="font-bold text-foreground text-sm">AHP Decision Weights Used</h3>
             </div>
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
               {result.ahpWeights?.labels?.map((label, i) => (
                 <div key={i} className="bg-background rounded-xl p-3 border border-border">
                   <p className="text-lg font-black text-primary">
@@ -309,7 +309,7 @@ export default function Results() {
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Select
                 value={selectedCourseId}
                 onValueChange={(v) => {
@@ -317,7 +317,7 @@ export default function Results() {
                   setJambResult(null);
                 }}
               >
-                <SelectTrigger aria-label="Select a target university course" className="flex-1">
+                <SelectTrigger aria-label="Select a target university course" className="w-full sm:flex-1">
                   <SelectValue placeholder="Select a target university course…" />
                 </SelectTrigger>
                 <SelectContent>

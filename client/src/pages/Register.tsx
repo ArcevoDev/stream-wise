@@ -155,7 +155,7 @@ export default function Register() {
               </div>
 
               {/* Password pair */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="password">Password</Label>
                   <PasswordInput
@@ -183,7 +183,7 @@ export default function Register() {
               </div>
 
               {/* Gender + DOB */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="gender">Gender</Label>
                   <Select

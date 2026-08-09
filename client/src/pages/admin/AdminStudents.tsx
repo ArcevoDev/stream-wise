@@ -112,11 +112,11 @@ export default function AdminStudents() {
             {data ? `${data.pagination.total} total` : "Loading…"}
           </p>
         </div>
-        <form onSubmit={handleSearch} className="flex items-center gap-2">
-          <div className="relative">
+        <form onSubmit={handleSearch} className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
-              className="pl-9 w-56"
+              className="pl-9 w-full sm:w-56"
               placeholder="Search name or email…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -148,56 +148,58 @@ export default function AdminStudents() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Student</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Stream</TableHead>
-                    <TableHead className="text-right">Weighted Score</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.students.map((s) => {
-                    const roleBadge = ROLE_BADGE[s.role] ?? ROLE_BADGE.STUDENT;
-                    return (
-                      <TableRow key={s.id}>
-                        <TableCell>
-                          <Link
-                            to={`/admin/students/${s.id}`}
-                            className="block font-medium text-foreground hover:text-primary hover:underline"
-                          >
-                            {s.fullName}
-                          </Link>
-                          <span className="block text-xs text-muted-foreground">{s.email}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={roleBadge.variant}>{roleBadge.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {s.currentStream ? STREAM_LABELS[s.currentStream] ?? s.currentStream : "-"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {s.weightedAcademicScore !== null ? Math.round(s.weightedAcademicScore) : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <span className="flex items-center gap-1.5">
-                            {s.hasRecommendation ? (
-                              <ShieldCheck size={14} className="text-success" />
-                            ) : (
-                              <span className="inline-block h-2 w-2 rounded-full bg-muted" />
-                            )}
-                            <span className="text-xs text-muted-foreground">
-                              {s.hasRecommendation ? "Recommended" : "In progress"}
+              <div className="-mx-4 overflow-x-auto px-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Stream</TableHead>
+                      <TableHead className="text-right">Weighted Score</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.students.map((s) => {
+                      const roleBadge = ROLE_BADGE[s.role] ?? ROLE_BADGE.STUDENT;
+                      return (
+                        <TableRow key={s.id}>
+                          <TableCell>
+                            <Link
+                              to={`/admin/students/${s.id}`}
+                              className="block font-medium text-foreground hover:text-primary hover:underline"
+                            >
+                              {s.fullName}
+                            </Link>
+                            <span className="block text-xs text-muted-foreground">{s.email}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={roleBadge.variant}>{roleBadge.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {s.currentStream ? STREAM_LABELS[s.currentStream] ?? s.currentStream : "-"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {s.weightedAcademicScore !== null ? Math.round(s.weightedAcademicScore) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            <span className="flex items-center gap-1.5">
+                              {s.hasRecommendation ? (
+                                <ShieldCheck size={14} className="text-success" />
+                              ) : (
+                                <span className="inline-block h-2 w-2 rounded-full bg-muted" />
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {s.hasRecommendation ? "Recommended" : "In progress"}
+                              </span>
                             </span>
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
 
               {data.pagination.totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between border-t pt-4">

@@ -385,7 +385,7 @@ export default function AdminStudentDetail() {
                         {formatDate(rec.generatedAt)}
                       </span>
                     </div>
-                    <dl className="mt-4 grid grid-cols-4 gap-2 text-center text-sm">
+                    <dl className="mt-4 grid grid-cols-2 gap-2 text-center text-sm sm:grid-cols-4">
                       {[
                         ["Science", rec.vScience],
                         ["Humanities", rec.vHumanities],

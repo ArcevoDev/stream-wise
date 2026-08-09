@@ -74,17 +74,17 @@ export default function StreamCard({ stream, score, rank, maxScore }: StreamCard
           Top Recommendation
         </span>
       )}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl ${meta.iconBg}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${meta.iconBg}`}>
             <Icon size={18} className={meta.iconColor} />
           </span>
-          <div>
-            <p className="font-bold text-foreground">{stream} Stream</p>
+          <div className="min-w-0">
+            <p className="font-bold text-foreground truncate">{stream} Stream</p>
             <p className="text-xs text-muted-foreground">{meta.subjects}</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <p className="text-2xl font-black text-foreground">{(score * 100).toFixed(1)}</p>
           <p className="text-xs text-muted-foreground">SAW score ×100</p>
         </div>
