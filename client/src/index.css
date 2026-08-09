@@ -23,6 +23,16 @@
   }
 }
 
+/* ── Overlays above the floating SiteNav (z-[100]) ───────────────────────── */
+/* The facet Dialog overlay/content render at z-50, which the pill topbar
+   (z-[100]) would otherwise float above, staying visible behind the modal.
+   The overlay is a Radix portal (teleported to <body>), so it is bumped
+   directly here. The app only uses the Dialog family today; if Sheet is
+   adopted later, scope this to the dialog overlay specifically. */
+.fixed.inset-0.z-50 {
+  z-index: 120;
+}
+
 /* ── Print styles ─────────────────────────────────────────────────────────── */
 @media print {
   nav,

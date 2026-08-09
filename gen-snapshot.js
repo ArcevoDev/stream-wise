@@ -25,7 +25,7 @@ const IGNORED_ITEMS = new Set([
   // ── SECURITY: Never include in snapshots ──────────────────────────────────
   // These files contain secrets, private keys, and credentials.
   // Sharing a snapshot that includes them exposes credentials to whoever
-  // receives it — AI tools, collaborators, issue trackers, etc.
+  // receives it: AI tools, collaborators, issue trackers, etc.
   ".env",
   ".env.local",
   ".env.development",

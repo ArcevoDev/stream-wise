@@ -1,12 +1,16 @@
 import { createContext, useContext, useState, useCallback, useEffect, createElement, type ReactNode } from "react";
 import { toast } from "sonner";
 import { api, registerAuthClearHandler } from "@/api/axios";
-import type { AuthResponse, AuthStudent, ConsentPayload, RegisterPayload, UserRole } from "@/types";
+import type { AuthResponse, AuthStudent, ConsentPayload, GuestRole, RegisterPayload, UserRole } from "@/types";
+
+type AnyRole = UserRole | GuestRole;
 
 interface AuthContextValue {
   token: string | null;
   student: AuthStudent | null;
-  role: UserRole | null;
+  role: AnyRole | null;
+  /** True when the session is the synthetic reviewer role (POST /auth/guest). */
+  isGuest: boolean;
   /** Derived from POST /auth/consent status. True until all four points are granted. */
   consentRequired: boolean | null;
   /** Refresh student + consentRequired from GET /auth/profile. Returns the derived
@@ -15,6 +19,8 @@ interface AuthContextValue {
   refreshIdentity: () => Promise<boolean>;
   login: (email: string, password: string) => Promise<AuthResponse>;
   register: (payload: RegisterPayload) => Promise<AuthResponse>;
+  /** One-click reviewer session (no credentials, no account). */
+  guestLogin: () => Promise<AuthResponse>;
   consent: (payload: ConsentPayload) => Promise<void>;
   logout: () => void;
   /** Called by the axios interceptor on 401/403 so React state resets too. */
@@ -52,6 +58,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshIdentity = useCallback(async (): Promise<boolean> => {
     if (!localStorage.getItem("dss_token")) return true;
+    // A guest token has no DB row: /auth/profile would fail. Skip the refresh.
+    if (normalizeStudent(localStorage.getItem("dss_student"))?.role === "GUEST") return true;
     try {
       const { data } = await api.get<{ student: AuthStudent; consentRequired?: boolean }>("/auth/profile");
       localStorage.setItem("dss_student", JSON.stringify(data.student));
@@ -79,6 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data;
   }, [persist]);
 
+  const guestLogin = useCallback(async (): Promise<AuthResponse> => {
+    const { data } = await api.post<AuthResponse>("/auth/guest");
+    persist(data);
+    return data;
+  }, [persist]);
+
   const consent = useCallback(async (payload: ConsentPayload): Promise<void> => {
     await api.post("/auth/consent", { ...payload, consentVersion: "consent-v1" });
     setConsentRequired(false);
@@ -103,15 +117,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshIdentity]);
 
   const logout = useCallback((): void => {
+    const wasGuest = normalizeStudent(localStorage.getItem("dss_student"))?.role === "GUEST";
     clearAuth();
-    toast.info("You've been logged out.");
+    toast.info(wasGuest ? "Guest session ended." : "You've been logged out.");
   }, [clearAuth]);
 
   const role = student?.role ?? null;
+  const isGuest = role === "GUEST";
 
   return createElement(
     AuthContext.Provider,
-    { value: { token, student, role, consentRequired, refreshIdentity, login, register, consent, logout, clearAuth } },
+    {
+      value: { token, student, role, isGuest, consentRequired, refreshIdentity, login, register, guestLogin, consent, logout, clearAuth },
+    },
     children,
   );
 }

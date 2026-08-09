@@ -1,10 +1,15 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Mail, Lock, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
+import { Mail, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
+import PasswordInput from "@/components/PasswordInput";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
+import { STEP_TO_ROUTE } from "@/hooks/useResumeStep";
+import type { AssessmentStep } from "@/types";
 
 interface LoginForm {
   email: string;
@@ -12,15 +17,22 @@ interface LoginForm {
 }
 
 export default function Login() {
-  const { login, refreshIdentity } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState<LoginForm>({ email: "", password: "" });
+  // Draft-persist ONLY the email (remember-me). The password is never written
+  // to localStorage: session-only state.
+  const [draftEmail, setDraftEmail, clearDraftEmail] = useLocalDraft<{ email: string }>(
+    "dss_draft_login_email",
+    { email: "" },
+  );
+  const [form, setForm] = useState<LoginForm>({ email: draftEmail.email, password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>): void {
     const { name, value } = e.target;
+    if (name === "email") setDraftEmail({ email: value });
     setForm((prev) => ({ ...prev, [name]: value }));
     setError("");
   }
@@ -30,17 +42,22 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await login(form.email, form.password);
-      // Route by role: staff go straight to the admin console; students
-      // continue the consent + assessment flow.
+      clearDraftEmail(); // logged in, drop the saved email
+      // Default landing for every role is the marketing home page. The
+      // assessment flow (or staff console) is one click away from there.
       if (res.student.role !== "STUDENT") {
-        navigate("/admin", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
-      // Re-derive consent status from /auth/profile. A user who already completed
-      // consent once goes straight to the assessment; one who has not is sent
-      // to the consent gate first.
-      const stillRequired = await refreshIdentity();
-      navigate(stillRequired ? "/consent" : "/scores", { replace: true });
+      // Students resume the assessment ONLY if it's incomplete. Once a
+      // recommendation exists there is nothing pending: land on the marketing
+      // hub, where the CTA offers history/results instead of the flow.
+      const { data: progress } = await api.get<{ step: AssessmentStep }>("/auth/progress");
+      if (progress.step === "results") {
+        navigate("/", { replace: true });
+        return;
+      }
+      navigate(STEP_TO_ROUTE[progress.step], { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, "Login failed. Check your credentials."));
     } finally {
@@ -86,23 +103,15 @@ export default function Login() {
 
               <div>
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock
-                    size={15}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                  />
-                  <Input
-                    id="password"
-                    className="pl-9"
-                    type="password"
-                    name="password"
-                    placeholder="Your password"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                    autoComplete="current-password"
-                  />
-                </div>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  placeholder="Your password"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="current-password"
+                />
               </div>
 
               {error && (
@@ -133,6 +142,15 @@ export default function Login() {
                 Create an account
               </Link>
             </p>
+
+            <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-center">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">Staff?</span> Counsellors and admins
+                sign in here too, they land on the Staff Console. Demo accounts:{" "}
+                <code className="font-mono text-[10px]">counselor@dss.test</code> /{" "}
+                <code className="font-mono text-[10px]">schooladmin@dss.test</code>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

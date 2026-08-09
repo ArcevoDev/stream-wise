@@ -1,32 +1,50 @@
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 
 interface ConfidenceGaugeProps {
   value: number;
 }
 
+/**
+ * Confidence gauge for the DSS display scale.
+ *
+ * The engine rescales raw confidence (top-stream share of SAW score) into a
+ * [50, 100] DISPLAY range (P0-3c, pinned by tests): 50% = "all three streams
+ * tied" (the 1/3 baseline), 100% = "clear dominant stream". The thresholds
+ * below are tuned to that scale, NOT a generic 0-100 gauge, so a near-baseline
+ * profile reads as "emerging signal" instead of a scary red "low confidence".
+ */
 export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
   const clamped = Math.min(100, Math.max(0, value));
 
-  const isHigh = clamped >= 80;
-  const isMid = clamped >= 65;
+  // Display-scale bands: 50 = tie baseline, 65 = meaningful lead, 80 = strong.
+  const isStrong = clamped >= 80;
+  const isClear = clamped >= 65;
 
-  const color = isHigh ? "text-success" : isMid ? "text-warning" : "text-destructive";
-  const bgColor = isHigh
+  const color = isStrong ? "text-success" : isClear ? "text-warning" : "text-foreground";
+  const bgColor = isStrong
     ? "bg-success/10 border-success/30"
-    : isMid
+    : isClear
       ? "bg-warning/10 border-warning/30"
-      : "bg-destructive/10 border-destructive/30";
-  const strokeColor = isHigh ? "#10B981" : isMid ? "#F59E0B" : "#EF4444";
-  const textFill = isHigh ? "#059669" : isMid ? "#D97706" : "#DC2626";
-  const label = isHigh ? "High Confidence" : isMid ? "Moderate Confidence" : "Low Confidence";
-  const Icon = isHigh ? TrendingUp : isMid ? Minus : TrendingDown;
+      : "bg-muted/40 border-border/60";
+  const strokeColor = isStrong ? "#10B981" : isClear ? "#F59E0B" : "var(--primary)";
+  const textFill = isStrong ? "#059669" : isClear ? "#D97706" : "var(--foreground)";
+  const label = isStrong ? "Strong Signal" : isClear ? "Clear Signal" : "Emerging Signal";
+  const hint =
+    clamped < 65
+      ? "Your profile shows some overlap between streams : the recommendation is a starting point, not a verdict."
+      : clamped < 80
+        ? "Your profile leans meaningfully toward this stream, with some overlap."
+        : "Your profile clearly favours this stream.";
+  const Icon = isStrong ? TrendingUp : isClear ? Minus : TrendingDown;
 
   // SVG arc gauge. Half-circle
   const r = 54;
   const cx = 70;
   const cy = 70;
   const arcLen = Math.PI * r;
-  const filled = (clamped / 100) * arcLen;
+  // Offset so the baseline (50%) starts the arc from empty, not half-filled.
+  const displayPct = Math.min(100, Math.max(0, ((clamped - 50) / 50) * 100));
+  const filled = (displayPct / 100) * arcLen;
   const dashArr = `${filled} ${arcLen}`;
 
   return (
@@ -74,6 +92,13 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
         <Icon size={14} />
         {label}
       </span>
+      <p className="mt-2 flex items-start gap-1.5 text-center text-[11px] leading-relaxed text-muted-foreground">
+        <Info size={12} className="mt-0.5 shrink-0" />
+        {hint}
+      </p>
+      <p className="mt-1 text-[10px] text-muted-foreground/60">
+        Scale: 50% = all streams equally likely · 100% = clear preference
+      </p>
     </div>
   );
 }

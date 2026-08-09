@@ -1,4 +1,4 @@
-# StreamWise — Weighted Decision Support System
+# StreamWise : Weighted Decision Support System
 
 A final-year research project that recommends an academic stream (**Science /
 Humanities / Business**) to Nigerian SS2 students using an **AHP-SAW**
@@ -18,11 +18,11 @@ seeded university-course catalog.
 
 - **Frontend:** React 19 + Vite 5 + TailwindCSS + React Router 6 (Vercel static)
 - **UI:** `@arcevo/facet-components` + `@arcevo/facet-layout` + `@arcevo/facet-tokens`
-  (OKLCH tokens, dark-first) — the only UI foundation. No legacy `components/ui/`.
+  (OKLCH tokens, dark-first) : the only UI foundation. No legacy `components/ui/`.
 - **Backend:** Express 4 + TypeScript (ESM) + Zod (Express API, reverse proxy)
 - **Database:** PostgreSQL + Prisma 7 (adapter-pg, generated TS client)
 - **Engine:** pure TS modules in `server/src/engine/` (AHP, SAW, RIASEC, BFI,
-  confidence, jamb, rescore) — zero DB/HTTP coupling, unit-testable
+  confidence, jamb, rescore) : zero DB/HTTP coupling, unit-testable
 - **Auth:** minimal JWT (7d expiry, bcrypt-12), role claim on token,
   `requireRole` guard. arc-id / `facet-auth` is **deferred** (see AGENTS.md).
 - **Package manager:** pnpm workspaces (client + server)
@@ -59,7 +59,7 @@ re-run (upserts by email). Credentials:
 
 | Role           | Email                 | Password         | Landed at |
 | -------------- | --------------------- | ---------------- | --------- |
-| STUDENT        | `student@dss.test`    | `Student123!`    | `/scores` |
+| STUDENT        | `student@dss.test`    | `Student123!`    | `/scores` (or `/history` if a recommendation exists) |
 | COUNSELOR      | `counselor@dss.test`  | `Counselor123!`  | `/admin` (read-only) |
 | SCHOOL_ADMIN   | `schooladmin@dss.test`| `SchoolAdmin123!`| `/admin` (read-only) |
 | ADMIN          | `ADMIN_EMAIL` env     | `ADMIN_PASSWORD` env | `/admin` (full) |
@@ -83,23 +83,23 @@ re-run (upserts by email). Credentials:
 
 ## Decision engine
 
-Pure ESM modules in `server/src/engine/` — no DB calls, no Express:
+Pure ESM modules in `server/src/engine/` : no DB calls, no Express:
 
-- `ahp.ts` — `computeAhpWeights(pairwiseMatrix)`; **throws** when CR > 0.10
+- `ahp.ts` : `computeAhpWeights(pairwiseMatrix)`; **throws** when CR > 0.10
   (Saaty rejection).
-- `saw.ts` — `computeSAW(academic, riasec, personality, weights, traitMapping)`
+- `saw.ts` : `computeSAW(academic, riasec, personality, weights, traitMapping)`
   with the personality→stream 3-trait mapping (thesis §3.5.3):
   Science = O+C+ES · Humanities = O+A+ES · Business = E+C+ES, where
   **ES (Emotional Stability) = 100 − neuroticism** (P0-3e).
-- `riasec.ts` / `bfi.ts` — instrument scoring (48-item RIASEC, 20-item BFI).
-- `confidence.ts` — CL min-max rescale to [50, 100]; per-criterion
+- `riasec.ts` / `bfi.ts` : instrument scoring (48-item RIASEC, 20-item BFI).
+- `confidence.ts` : CL min-max rescale to [50, 100]; per-criterion
   contribution breakdown (`explainRecommendation`).
-- `jamb.ts` — pure `validateJambPrerequisites`.
-- `rescore.ts` — re-computes RIASEC + BFI profiles from raw rows.
+- `jamb.ts` : pure `validateJambPrerequisites`.
+- `rescore.ts` : re-computes RIASEC + BFI profiles from raw rows.
 
 Criterion weights [0.540, 0.297, 0.163] come from 5 guidance counsellors'
 expert judgement (thesis §3.5.2), seeded as an immutable `AhpWeightSet` row
-(CR ≈ 0.007). The engine consumes weights as parameters — no module-level
+(CR ≈ 0.007). The engine consumes weights as parameters : no module-level
 weight constants. `algorithmVersion = ahp-saw-v1.1`.
 
 ## Methodology guardrails (research integrity)
@@ -115,7 +115,7 @@ weight constants. `algorithmVersion = ahp-saw-v1.1`.
   recommendation time; `RecommendationLog` snapshots inputs + weight-set FK +
   algorithm version for the audit trail.
 - **Re-scoring:** `POST /api/admin/rescore/:studentId` recomputes profiles
-  from raw instrument rows (which carry `instrumentVersion`) and flags drift —
+  from raw instrument rows (which carry `instrumentVersion`) and flags drift :
   never mutates.
 
 ## API surface
@@ -145,10 +145,14 @@ is `authenticateToken` then `requireRole(...)`.
 ## Test plan
 
 Engine code is deliberately dependency-free so it can be unit tested. **Vitest
-is the intended runner (P1-1)** — zero tests exist today; the 100-profile
-validation simulation for the thesis "Validation Testing" chapter is the next
-build. Test vectors must pin the P0-3e 3-trait personality mapping
-(O+C+ES / O+A+ES / E+C+ES) and the derived `emotionalStabilityScore`.
+is configured and running (P1-1, shipped 2026-08-07)** : 44 tests across 8
+files under `server/src/engine/` (ahp, bfi, riasec, saw, jamb, confidence,
+rescore, validation-simulation). Run with `pnpm --filter server test`. The
+100-profile validation simulation (validation-simulation.test.ts) is the
+thesis "Validation Testing" evidence (§3.8) : it verifies zero re-scoring
+drift and ≥95/100 ground-truth agreement on synthetic profiles. Test vectors
+pin the P0-3e 3-trait personality mapping (O+C+ES / O+A+ES / E+C+ES) and the
+derived `emotionalStabilityScore`.
 
 ## Deploy notes
 
@@ -157,14 +161,14 @@ build. Test vectors must pin the P0-3e 3-trait personality mapping
   the API origin in production.
 - `prisma generate` + `prisma migrate deploy` must run on server deploy.
 - The client imports `server/enums` (the server package exports generated
-  Prisma enums) — the monorepo build pipeline must keep that export intact.
+  Prisma enums) : the monorepo build pipeline must keep that export intact.
 - CORS allowlist is configurable via `CLIENT_URL` (comma-separated) plus
   `*.vercel.app` and `*.arcevocirqle.com.ng` subdomains.
 
 ## Docs
 
-- `AGENTS.md` — the always-read agent contract (current-state rules).
-- `.agent/output.txt` — live status dashboard + priority roadmap.
-- `.agent/priority.txt` — architecture & priority register.
-- `CLAUDE.md` — original rebuild spec (aspirational; where it conflicts with
+- `AGENTS.md` : the always-read agent contract (current-state rules).
+- `.agent/output.txt` : live status dashboard + priority roadmap.
+- `.agent/priority.txt` : architecture & priority register.
+- `CLAUDE.md` : original rebuild spec (aspirational; where it conflicts with
   the code, AGENTS.md + the code are reality).

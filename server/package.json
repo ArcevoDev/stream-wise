@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate || node -e \"console.warn('[server] prisma generate skipped: DATABASE_URL not set in this environment')\"",
     "prisma:format": "prisma format",
     "prisma:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
     "prisma:generate": "prisma generate",

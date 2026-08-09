@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useAuth } from "./context/AuthContext";
-import Topbar from "./components/Topbar";
+import { useResumeStep } from "./hooks/useResumeStep";
+import SiteNav from "./components/SiteNav";
 import ConsentLanding from "./pages/ConsentLanding";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -10,6 +11,7 @@ import Scores from "./pages/Scores";
 import RIASEC from "./pages/RIASEC";
 import Personality from "./pages/Personality";
 import Results from "./pages/Results";
+import History from "./pages/History";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminStudents from "./pages/admin/AdminStudents";
@@ -18,42 +20,67 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminAudit from "./pages/admin/AdminAudit";
 
 /** Redirect authenticated users away from public-only routes (login / register).
- * Role-aware landing: staff roles go to the admin console; students continue
- * the assessment flow. Non-student roles have no SS2 assessment data, so
- * sending them to /scores would just 403 on the recommend endpoint. */
+ * The marketing home page is the default hub for everyone: staff and students
+ * with nothing pending land there; students mid-assessment resume their step.
+ * A GUEST (reviewer session) is treated like a visitor: they may browse the
+ * marketing + auth pages only, so they are never diverted into the flow. */
 function PublicRoute({ children }: { children: ReactNode }) {
   const { token, role } = useAuth();
+  const [studentLanding, setStudentLanding] = useState<string | null>(null);
+  const resumeRoute = useResumeStep(token != null && role === "STUDENT");
+
+  useEffect(() => {
+    if (token && role === "STUDENT" && resumeRoute) {
+      setStudentLanding(resumeRoute);
+    }
+  }, [token, role, resumeRoute]);
+
   if (!token) return <>{children}</>;
-  return role === "STUDENT" ? <Navigate to="/scores" replace /> : <Navigate to="/admin" replace />;
+  if (role === "GUEST") return <>{children}</>;
+  if (role === "STUDENT") {
+    // Only divert mid-assessment students back into the flow. A student who
+    // already has a recommendation (nothing pending) stays on the landing hub.
+    return studentLanding && studentLanding !== "/history" ? (
+      <Navigate to={studentLanding} replace />
+    ) : (
+      <Navigate to="/" replace />
+    );
+  }
+  return <Navigate to="/" replace />;
 }
 
-/** Redirect unauthenticated users to login. */
+/** Redirect unauthenticated users to login. Guests have no account, so the
+ * assessment flow is out of reach: they are sent to register instead. */
 function PrivateRoute({ children }: { children: ReactNode }) {
-  const { token } = useAuth();
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+  const { token, role } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  if (role === "GUEST") return <Navigate to="/register" replace />;
+  return <>{children}</>;
 }
 
 /** Role-gated area. Client-side convenience; the server enforces via requireRole.
  * The admin console is open to all staff roles: ADMIN gets full access, while
  * COUNSELOR / SCHOOL_ADMIN get a read-only view (the server still 403s any
- * mutation they attempt — this is just the landing surface). */
+ * mutation they attempt: this is just the landing surface). */
 function RequireStaff({ children }: { children: ReactNode }) {
   const { token, role } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
-  if (!role || role === "STUDENT") return <Navigate to="/scores" replace />;
+  if (!role || role === "STUDENT" || role === "GUEST") return <Navigate to="/scores" replace />;
   return <>{children}</>;
 }
 
 export default function App() {
   const { pathname } = useLocation();
-  // The consent-first landing page owns its own nav via LandingLayout (LASU
-  // brand block + pill nav). Rendering the global Topbar there too creates a
-  // double navbar, so it is hidden on `/`.
-  const hideGlobalTopbar = pathname === "/";
+  // One shared navbar (SiteNav) for the whole app: the landing page, auth
+  // pages, consent gate, and assessment flow all render the same pill navbar,
+  // so the brand, theme toggle, and account actions are consistent everywhere.
+  // The admin console owns its own chrome (fixed sidebar + mobile bar), so
+  // the shared nav is hidden there.
+  const hideGlobalTopbar = pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!hideGlobalTopbar && <Topbar />}
+      {!hideGlobalTopbar && <SiteNav />}
       <main className="flex-1">
         <Routes>
           {/* Consent-first landing: `/` is the informed-consent gate. */}
@@ -85,9 +112,7 @@ export default function App() {
           <Route
             path="/consent"
             element={
-              <PrivateRoute>
-                <Consent />
-              </PrivateRoute>
+              <Consent />
             }
           />
           <Route
@@ -111,6 +136,22 @@ export default function App() {
             element={
               <PrivateRoute>
                 <Results />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/results/:id"
+            element={
+              <PrivateRoute>
+                <Results />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <PrivateRoute>
+                <History />
               </PrivateRoute>
             }
           />

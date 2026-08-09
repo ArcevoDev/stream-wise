@@ -4,13 +4,17 @@ import { getApiErrorMessage } from "@/api/errors";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
+import type { AuditLogRow } from "@/types";
 
 interface AuditEntry {
   id: string;
   studentId: string | null;
+  actorId: string | null;
   action: string;
   details: string | null;
   createdAt: string;
+  actor: AuditLogRow["actor"];
+  student: AuditLogRow["student"];
 }
 
 const ACTION_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" }> = {
@@ -92,11 +96,26 @@ export default function AdminAudit() {
                   >
                     <div className="flex items-center gap-3">
                       <Badge variant={action.variant}>{action.label}</Badge>
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {log.studentId?.slice(0, 8) ?? "system"}
-                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium text-foreground">
+                          {log.actor?.fullName ?? "Unknown actor"}
+                          {log.actor?.role && (
+                            <span className="ml-1.5 font-mono text-[10px] uppercase text-muted-foreground">
+                              {log.actor.role.replaceAll("_", " ")}
+                            </span>
+                          )}
+                        </p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {log.actor?.email ?? log.student?.email ?? "system"}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
+                      {log.student && log.student.id !== log.actorId && (
+                        <p className="text-[11px] text-muted-foreground">
+                          on <span className="font-medium text-foreground">{log.student.fullName}</span>
+                        </p>
+                      )}
                       {log.details && (
                         <p className="text-xs text-muted-foreground">{log.details}</p>
                       )}

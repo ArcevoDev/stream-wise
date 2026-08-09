@@ -1,5 +1,5 @@
 // ============================================================================
-// DSS — Weighted Decision Support System for Subject Combination & Career
+// DSS : Weighted Decision Support System for Subject Combination & Career
 // Path Selection (Nigerian SS2 students, 2025/2026 NERDC Curriculum).
 //
 // PRISMA 7 NOTICE: datasource intentionally carries NO `url` field.
@@ -9,9 +9,9 @@
 //
 // DESIGN PRINCIPLES
 // ─────────────────
-// 1. Fully normalized — subjects are rows in SubjectScore, not columns.
+// 1. Fully normalized : subjects are rows in SubjectScore, not columns.
 //    Adding a new NERDC subject is an INSERT, never an ALTER TABLE.
-// 2. Every recommendation is fully auditable — the exact weights and inputs
+// 2. Every recommendation is fully auditable : the exact weights and inputs
 //    that produced each recommendation are stored alongside the output
 //    (Explainability Gap, §2.6 / NFR-01).
 // 3. Raw psychometric responses (RIASEC + BFI) are persisted separately
@@ -19,7 +19,7 @@
 //    and the thesis's 100-profile simulation (§3.8 Validation Testing).
 // 4. Stakeholder roles (Student, Counselor, School, Admin) are modelled as
 //    first-class entities per §1.6 Significance of the Study.
-// 5. JAMB catalog is relational — mandatory subjects are rows in
+// 5. JAMB catalog is relational : mandatory subjects are rows in
 //    JambCourseSubject, not a PostgreSQL ARRAY, enabling proper JOINs and
 //    prerequisite validation (FR-08).
 //
@@ -28,7 +28,7 @@
 // Zod validators in src/validators/ import Prisma's own generated enums
 // (e.g. `Subject`, `Gender`) from the client output below and build
 // `z.enum(...)` schemas directly off `Object.values(...)`, so enum drift is
-// structurally impossible — adding a value here updates the validator with
+// structurally impossible : adding a value here updates the validator with
 // zero hand-edits. Field-level constraints (lengths, ranges) are kept
 // adjacent to the corresponding model with a comment back to this file.
 // We deliberately do NOT use a Prisma→Zod model generator (e.g.
@@ -121,9 +121,9 @@ enum AcademicLevel {
 /// CITIZENSHIP_AND_HERITAGE, DIGITAL_TECHNOLOGIES + one TRADE_SUBJECT.
 /// Stream-specific and elective subjects follow below.
 ///
-/// P0-3f cleanup (2026-08-07): legacy/unused values removed — CIVIC_EDUCATION
+/// P0-3f cleanup (2026-08-07): legacy/unused values removed : CIVIC_EDUCATION
 /// (superseded by CITIZENSHIP_AND_HERITAGE), SOCIAL_STUDIES / BUSINESS_STUDIES /
-/// BASIC_SCIENCE (the "JSS3 baseline" trio that was never collected — JSS3 is
+/// BASIC_SCIENCE (the "JSS3 baseline" trio that was never collected : JSS3 is
 /// a single overall average), COMPUTER_STUDIES / DATA_PROCESSING /
 /// OFFICE_PRACTICE / STORE_MANAGEMENT / BOOK_KEEPING / MARKETING (catalog-only,
 /// never in a JAMB course or the client form), and the 10 TRADE_* values
@@ -172,7 +172,7 @@ enum Subject {
 // ─────────────────────────────────────────────────────────────────────────────
 // VERSIONED DOMAIN CATALOGS (P0-1)
 // ─────────────────────────────────────────────────────────────────────────────
-// CLAUDE.md "What NOT to build": no hardcoded subject lists — these are
+// CLAUDE.md "What NOT to build": no hardcoded subject lists : these are
 // versioned catalog tables. The Subject enum remains as the STABLE identity
 // for subject codes (Scores.tsx imports it from server/enums); what is
 // versioned here is which subjects exist in a given NERDC academic session,
@@ -213,7 +213,7 @@ model SubjectCatalog {
   @@map("subject_catalog")
 }
 
-/// Versioned AHP weight sets — the pairwise matrix, derived weights, and
+/// Versioned AHP weight sets : the pairwise matrix, derived weights, and
 /// Consistency Ratio actually used for a recommendation. Immutable once a
 /// RecommendationLog references it (append-only; no update path in code).
 model AhpWeightSet {
@@ -222,7 +222,7 @@ model AhpWeightSet {
   label           String? // provenance: e.g. "5 guidance counsellors, thesis §3.5.2"
   criterionLabels Json // ["Academic Performance", "Vocational Interest (RIASEC)", "Personality Traits"]
   pairwiseMatrix  Json // 3x3 Saaty matrix as nested array
-  weights         Json // [0.540, 0.297, 0.163] — derived priority vector
+  weights         Json // [0.540, 0.297, 0.163] : derived priority vector
   lambdaMax       Float
   ci              Float
   cr              Float // must be <= 0.10 (Saaty 1980)
@@ -257,7 +257,7 @@ model School {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CORE IDENTITY — STUDENT
+// CORE IDENTITY : STUDENT
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Primary actor of the DSS (FR-01).
@@ -282,7 +282,7 @@ model Student {
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id], onDelete: SetNull)
 
-  /// Career aspiration as free text — used by the JAMB validator (FR-08).
+  /// Career aspiration as free text : used by the JAMB validator (FR-08).
   /// E.g. "Medicine and Surgery", "Law", "Accounting".
   careerAspiration String?
 
@@ -325,7 +325,7 @@ model Student {
 /// The weighted academic score formula per §3.5.3:
 ///   weightedAcademicScore = (jss3Average × 0.40) + (ss1Average × 0.60)
 ///
-/// Individual subject scores live in SubjectScore — fully normalized so
+/// Individual subject scores live in SubjectScore : fully normalized so
 /// that any subject (including new NERDC trade subjects) can be added
 /// without a schema migration.
 model AcademicProfile {
@@ -340,7 +340,7 @@ model AcademicProfile {
   /// The stream the student is currently placed in (as reported by them).
   /// Drives which SS1 subjects the client collects. Distinct from
   /// RecommendationLog.topStream, which is what the engine independently
-  /// recommends — comparing the two is the mismatch-detection signal
+  /// recommends : comparing the two is the mismatch-detection signal
   /// referenced in §1.2 (Science-superiority bias, misaligned placement).
   currentStream AcademicStream?
 
@@ -356,7 +356,7 @@ model AcademicProfile {
 /// This replaces the flat columns ss1English, ss1Mathematics, etc.
 ///
 /// Adding a new NERDC subject in a future curriculum revision is a new
-/// enum value + new data rows — zero DDL changes required.
+/// enum value + new data rows : zero DDL changes required.
 model SubjectScore {
   id        String  @id @default(uuid())
   studentId String
@@ -378,7 +378,7 @@ model SubjectScore {
 // RIASEC VOCATIONAL INTEREST PROFILE (FR-03)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Derived RIASEC profile — computed from 48 RiasecResponse items (FR-03).
+/// Derived RIASEC profile : computed from 48 RiasecResponse items (FR-03).
 /// Stream affinities map to SAW criterion C₂ (ω₂ = 0.297, §3.5.2):
 ///   scienceAffinity     = normalized(I + R scores)
 ///   humanitiesAffinity  = normalized(A + S scores)
@@ -421,7 +421,7 @@ model RiasecResponse {
   type       RiasecType // R | I | A | S | E | C
   value      Int // Likert 1–5
 
-  /// Instrument version (e.g. "riasec-v1") — stamped so a future item-set
+  /// Instrument version (e.g. "riasec-v1") : stamped so a future item-set
   /// change cannot corrupt historical responses (spec-required).
   instrumentVersion String @default("riasec-v1")
 
@@ -433,13 +433,13 @@ model RiasecResponse {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PERSONALITY — BIG FIVE INVENTORY (BFI-20) (§3.5.3)
+// PERSONALITY : BIG FIVE INVENTORY (BFI-20) (§3.5.3)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Derived Big Five personality profile — criterion C₃ (ω₃ = 0.163, §3.5.2).
+/// Derived Big Five personality profile : criterion C₃ (ω₃ = 0.163, §3.5.2).
 /// Each trait score is normalized to [0, 100] before SAW aggregation.
 ///
-/// P0-3e: neuroticism is a first-class 5-factor input — the SAW engine
+/// P0-3e: neuroticism is a first-class 5-factor input : the SAW engine
 /// consumes it INVERTED as Emotional Stability (100 − neuroticism), which
 /// predicts capacity to sustain a demanding stream's workload (§2.3.4) and
 /// therefore positively drives all three streams. The raw neuroticismScore
@@ -484,7 +484,7 @@ model BfiResponse {
   reverseKeyed Boolean          @default(false)
   value        Int // Likert 1–5 (raw, before any reversal)
 
-  /// Instrument version (e.g. "bfi-v1") — stamped so a future item-set
+  /// Instrument version (e.g. "bfi-v1") : stamped so a future item-set
   /// change cannot corrupt historical responses (spec-required).
   instrumentVersion String @default("bfi-v1")
 
@@ -504,7 +504,7 @@ model BfiResponse {
 /// AUDITABILITY (NFR-01 / §2.6 Explainability Gap):
 /// Every field that fed into this recommendation is snapshotted here so
 /// that if the student's profile is later updated the historical result
-/// remains fully traceable. Nothing here references live profile rows —
+/// remains fully traceable. Nothing here references live profile rows :
 /// it is a complete self-contained record of what was computed and why.
 model RecommendationLog {
   id        String  @id @default(uuid())
@@ -548,7 +548,14 @@ model RecommendationLog {
   /// }
   inputsSnapshot Json
 
-  /// Algorithm version string (e.g. "ahp-saw-v1.0") — supports future
+  /// Deterministic SHA-256 of inputsSnapshot (stable keyed JSON). The unique
+  /// index makes recommendation generation idempotent AT THE DATABASE LEVEL :
+  /// concurrent requests (e.g. React StrictMode double-effects) cannot both
+  /// insert, so history can never stack two identical rows. Null only on
+  /// legacy rows written before this column existed.
+  inputFingerprint String? @unique
+
+  /// Algorithm version string (e.g. "ahp-saw-v1.0") : supports future
   /// engine updates while preserving comparability of old logs.
   algorithmVersion String @default("ahp-saw-v1.0")
 
@@ -646,10 +653,11 @@ model AuditLog {
 
   /// Coarse action category. Recommended values:
   /// LOGIN | CONSENT_RECORDED | SCORES_SUBMITTED | RIASEC_COMPLETED |
-  /// BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED
+  /// BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED |
+  /// RECOMMENDATION_HISTORY_CLEARED
   action String
 
-  /// Arbitrary structured payload — keeps the table generic while
+  /// Arbitrary structured payload : keeps the table generic while
   /// allowing rich event-specific data to be stored.
   metadata Json?
 

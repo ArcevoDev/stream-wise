@@ -1,5 +1,5 @@
 // ============================================================================
-// Seed script — populates the JAMB course catalog + versioned domain catalogs.
+// Seed script: populates the JAMB course catalog + versioned domain catalogs.
 // Run via: pnpm prisma:migrate (auto-seeds) or manually: pnpm seed
 // Uses the same adapter-backed Prisma client as the running app so behaviour
 // is identical between seeding and normal operation.
@@ -8,7 +8,7 @@
 // matching the JambCourseSubject join table. Where the original catalog had
 // "Economics or Commerce"-style alternatives, we pick the single subject
 // that the SAW recommendation flow would assign to that stream's compulsory
-// elective set — see README for the full alternative-subject discussion.
+// elective set: see README for the full alternative-subject discussion.
 //
 // P0-1: this seed now also creates:
 //   - the active AcademicSession ("2025/2026")
@@ -20,7 +20,7 @@
 
 import "dotenv/config";
 import { prisma, disconnectPrisma } from "@/db/prisma.js";
-import { AcademicStream, Subject } from "./generated/client";
+import { AcademicStream, Subject } from "./generated/client.js";
 import { computeAhpWeights, DEFAULT_PAIRWISE_MATRIX, DEFAULT_CRITERION_LABELS } from "../src/engine/ahp.js";
 import type { AcademicStream as AcademicStreamType, Subject as SubjectType } from "./generated/client.js";
 
@@ -244,7 +244,7 @@ const JAMB_CATALOG: JambSeedEntry[] = [
 const ACTIVE_SESSION = "2025/2026";
 
 /**
- * SubjectCatalog seed — one row per (session, subject) with its stream
+ * SubjectCatalog seed: one row per (session, subject) with its stream
  * placement, core/trade flags, and display code/name. This is the versioned
  * source of truth for "which subjects exist in this NERDC session" (P0-1a).
  * The Subject enum stays the stable identity; the catalog scopes validity.
@@ -315,13 +315,13 @@ async function seedVersionedCatalogs(): Promise<void> {
     })),
   });
 
-  // Compute the canonical weight set via the engine itself — the DB row is
+  // Compute the canonical weight set via the engine itself: the DB row is
   // guaranteed to match computeAhpWeights() exactly. (P0-1c provenance.)
   const ahp = computeAhpWeights(DEFAULT_PAIRWISE_MATRIX, DEFAULT_CRITERION_LABELS);
 
   const existing = await prisma.ahpWeightSet.findUnique({ where: { version: "ahp-v1.0" } });
   if (!existing) {
-    // Only one weight set may be active at a time — deactivate any others
+    // Only one weight set may be active at a time: deactivate any others
     // before activating this one (idempotent re-seed).
     await prisma.ahpWeightSet.updateMany({ where: { isActive: true }, data: { isActive: false } });
     await prisma.ahpWeightSet.create({
@@ -340,7 +340,7 @@ async function seedVersionedCatalogs(): Promise<void> {
     });
   } else {
     // Keep the seeded set active (fresh re-seed after a wipe), deactivating
-    // any other active set. Refresh the session link too — after a wipe the
+    // any other active set. Refresh the session link too: after a wipe the
     // old FK may have been SET NULL.
     await prisma.ahpWeightSet.updateMany({ where: { isActive: true }, data: { isActive: false } });
     await prisma.ahpWeightSet.update({

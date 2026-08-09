@@ -6,21 +6,21 @@ import { rescoreBfi, rescoreRiasec } from "./rescore.js";
 import type { Stream } from "@/types/domain.js";
 
 /**
- * THESIS §3.8 — 100-PROFILE VALIDATION SIMULATION
+ * THESIS §3.8: 100-PROFILE VALIDATION SIMULATION
  * ------------------------------------------------
  * "Validation Testing" evidence: the engine is run over 100 synthetic
  * student profiles, each built from a known ground-truth stream lean.
  *
  * Three properties are asserted at scale:
- *   1. SCORING STABILITY — recomputing RIASEC + BFI from the raw response
+ *   1. SCORING STABILITY: recomputing RIASEC + BFI from the raw response
  *      rows (the P0-5c re-scoring path) reproduces the original profiles
  *      exactly (no drift). This is what the admin /api/admin/rescore
  *      endpoint proves per student.
- *   2. RECOMMENDATION AGREEMENT — a student whose synthetic responses are
+ *   2. RECOMMENDATION AGREEMENT: a student whose synthetic responses are
  *      strongly biased toward their ground-truth stream receives that
  *      stream as the top recommendation (the engine responds to the
  *      intended signal).
- *   3. CONFIDENCE BEHAVIOUR — every recommendation is in the documented
+ *   3. CONFIDENCE BEHAVIOUR: every recommendation is in the documented
  *      display range [50, 100], and strongly-biased profiles get higher
  *      confidence than the 1/3 baseline.
  */
@@ -39,14 +39,14 @@ function mulberry32(seed: number): () => number {
 
 const STREAMS: Stream[] = ["Science", "Humanities", "Business"];
 
-/** A stream's dominant Holland types (primary then secondary) — §3.5.3. */
+/** A stream's dominant Holland types (primary then secondary), §3.5.3. */
 const STREAM_HOLLAND: Record<Stream, [string, string]> = {
   Science: ["I", "R"],
   Humanities: ["A", "S"],
   Business: ["E", "C"],
 };
 
-/** A stream's dominant BFI traits — matches DEFAULT_STREAM_TRAIT_MAPPING. */
+/** A stream's dominant BFI traits: matches DEFAULT_STREAM_TRAIT_MAPPING. */
 const STREAM_TRAITS: Record<Stream, string[]> = {
   Science: ["O", "C", "ES"],
   Humanities: ["O", "A", "ES"],

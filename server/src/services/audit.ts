@@ -8,11 +8,13 @@
 //
 // Actions used:
 //   LOGIN | CONSENT_RECORDED | SCORES_SUBMITTED | RIASEC_COMPLETED |
-//   BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED
+//   BFI_COMPLETED | RECOMMENDATION_GENERATED | JAMB_VALIDATED |
+//   RECOMMENDATION_HISTORY_CLEARED
 // ============================================================================
 
 import type { Request } from "express";
 import { prisma } from "@/db/prisma.js";
+import type { AuthTokenPayload } from "@/types/express.js";
 
 export interface AuditWriteInput {
   action: string;
@@ -20,7 +22,7 @@ export interface AuditWriteInput {
   metadata?: Record<string, unknown>;
   /** Override the actor captured from the token (e.g. admin acting on a student). */
   actorId?: string;
-  actorRole?: string;
+  actorRole?: AuthTokenPayload["role"];
 }
 
 /**
@@ -35,7 +37,7 @@ export async function writeAudit(req: Request, input: AuditWriteInput): Promise<
       data: {
         studentId: input.studentId,
         actorId: input.actorId ?? req.student?.id ?? null,
-        actorRole: input.actorRole ? (input.actorRole as never) : (req.student?.role ?? null),
+        actorRole: input.actorRole ? (input.actorRole as never) : (req.student?.role === "GUEST" ? null : (req.student?.role ?? null)),
         action: input.action,
         metadata: (input.metadata ?? {}) as never,
         ipAddress: req.ip ?? null,

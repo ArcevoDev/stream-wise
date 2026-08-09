@@ -125,11 +125,11 @@ export default function RIASEC() {
         });
 
       await api.post("/riasec/submit", { responses: orderedResponses });
-      clearDraft(); // submitted — drop the autosave draft so a refresh can't re-post it
+      clearDraft(); // submitted, drop the autosave draft so a refresh can't re-post it
       toast.success("Interest profile saved!", {
         description: "Your RIASEC summary code has been calculated.",
       });
-      navigate("/personality");
+      navigate("/personality", { state: { justSubmitted: true } });
     } catch (err) {
       const msg = getApiErrorMessage(err, "Submission failed. Please try again.");
       setError(msg);
@@ -153,7 +153,12 @@ export default function RIASEC() {
   return (
     <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <ProgressBar step={2} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
+        <ProgressBar
+          step={2}
+          total={4}
+          labels={["Scores", "Interests", "Personality", "Results"]}
+          stepPct={totalExpected > 0 ? (totalAnswered / totalExpected) * 100 : 0}
+        />
 
         {/* Section progress dots */}
         <div className="mt-6 flex gap-1.5 justify-center">

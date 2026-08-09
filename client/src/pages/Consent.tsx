@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { ConsentPayload } from "@/types";
 import { ArrowRight, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription } from "@arcevo/facet-components";
+import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Checkbox } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
 
 /**
@@ -34,21 +35,30 @@ const CONSENT_POINTS: { key: "consentPoint1" | "consentPoint2" | "consentPoint3"
 ];
 
 export default function Consent() {
-  const { consent } = useAuth();
+  const { token, consent } = useAuth();
   const navigate = useNavigate();
 
   const [checking, setChecking] = useState(true);
   const [alreadyGranted, setAlreadyGranted] = useState(false);
-  const [checked, setChecked] = useState<ConsentPayload>({
-    consentPoint1: false,
-    consentPoint2: false,
-    consentPoint3: false,
-    consentPoint4: false,
-  });
+  // Consent checkboxes autosave so a refresh doesn't lose partial agreement.
+  const [checked, setChecked, clearChecked] = useLocalDraft<ConsentPayload>(
+    "dss_draft_consent",
+    {
+      consentPoint1: false,
+      consentPoint2: false,
+      consentPoint3: false,
+      consentPoint4: false,
+    },
+  );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    // Anonymous visitors: skip the identity check and show the consent form.
+    if (!token) {
+      setChecking(false);
+      return;
+    }
     let active = true;
     api
       .get("/auth/profile")
@@ -68,7 +78,7 @@ export default function Consent() {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, [token, navigate]);
 
   const allChecked = Object.values(checked).every(Boolean);
 
@@ -77,9 +87,17 @@ export default function Consent() {
       setError("Please agree to all four consent points to continue.");
       return;
     }
+    // Anonymous visitor: carry consent intent to register (account creation
+    // records consent in one flow). Registered users record it directly.
+    if (!token) {
+      sessionStorage.setItem("dss_pending_consent", JSON.stringify(checked));
+      navigate("/register");
+      return;
+    }
     setSaving(true);
     try {
       await consent(checked);
+      clearChecked(); // recorded, drop the local consent draft
       navigate("/scores", { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, "Could not save your consent. Please try again."));
@@ -120,16 +138,15 @@ export default function Consent() {
             <div className="space-y-4">
               {CONSENT_POINTS.map((point, i) => (
                 <label key={point.key} className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     name={point.key}
                     checked={checked[point.key]}
-                    onChange={(e) => {
-                      const { name, checked: isChecked } = e.target;
-                      setChecked((prev) => ({ ...prev, [name]: isChecked }));
+                    onCheckedChange={(isChecked) => {
+                      setChecked((prev) => ({ ...prev, [point.key]: isChecked === true }));
                       setError("");
                     }}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-input accent-primary"
+                    className="mt-0.5 shrink-0"
+                    aria-label={point.label}
                   />
                   <span className="text-sm text-foreground leading-snug">
                     <span className="font-semibold mr-1 text-muted-foreground">{i + 1}.</span>
@@ -147,7 +164,7 @@ export default function Consent() {
 
               <Button
                 onClick={handleSubmit}
-                disabled={saving}
+                disabled={!allChecked || saving}
                 className="w-full"
               >
                 {saving ? (

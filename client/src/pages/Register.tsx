@@ -2,10 +2,12 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { getApiErrorMessage } from "@/api/errors";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { Gender, ConsentPayload } from "@/types/index";
-import { User, Mail, Lock, Calendar, School, ArrowRight, AlertCircle, Loader2, BarChart3, ShieldCheck } from "lucide-react";
-import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription } from "@arcevo/facet-components";
+import { User, Mail, Calendar, School, ArrowRight, AlertCircle, Loader2, BarChart3, ShieldCheck } from "lucide-react";
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
+import PasswordInput from "@/components/PasswordInput";
 
 interface RegisterForm {
   fullName: string;
@@ -18,27 +20,32 @@ interface RegisterForm {
   dateOfBirth: string;
 }
 
-const INPUT_CLASS = "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+/** Non-sensitive fields persisted as a draft (passwords are never stored). */
+type RegisterDraft = Omit<RegisterForm, "password" | "confirmPassword">;
+
+const EMPTY_DRAFT: RegisterDraft = {
+  fullName: "",
+  email: "",
+  gender: "",
+  schoolName: "",
+  careerAspiration: "",
+  dateOfBirth: "",
+};
 
 export default function Register() {
   const { register, consent } = useAuth();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState<RegisterForm>({
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    gender: "",
-    schoolName: "",
-    careerAspiration: "",
-    dateOfBirth: "",
-  });
+  const [draft, setDraft, clearDraft] = useLocalDraft<RegisterDraft>("dss_draft_register", EMPTY_DRAFT);
+  const [form, setForm] = useState<RegisterForm>({ ...draft, password: "", confirmPassword: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>): void {
     const { name, value } = e.target;
+    if (name !== "password" && name !== "confirmPassword") {
+      setDraft((prev) => ({ ...prev, [name]: value }));
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
     setError("");
   }
@@ -64,6 +71,7 @@ export default function Register() {
         careerAspiration: form.careerAspiration || undefined,
         dateOfBirth: form.dateOfBirth ? new Date(form.dateOfBirth).toISOString() : undefined,
       });
+      clearDraft(); // registered, drop the saved fields
 
       // Consent intent comes from the consent-first landing page. If the user
       // went straight to register (e.g. deep link), they are routed to /consent
@@ -150,43 +158,27 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                    />
-                    <Input
-                      id="password"
-                      className="pl-9"
-                      type="password"
-                      name="password"
-                      placeholder="Min. 8 chars"
-                      value={form.password}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    name="password"
+                    placeholder="Min. 8 chars"
+                    value={form.password}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="confirmPassword">Confirm</Label>
-                  <div className="relative">
-                    <Lock
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-                    />
-                    <Input
-                      id="confirmPassword"
-                      className="pl-9"
-                      type="password"
-                      name="confirmPassword"
-                      placeholder="Repeat password"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                      required
-                      autoComplete="new-password"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Repeat password"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    autoComplete="new-password"
+                  />
                 </div>
               </div>
 
@@ -194,12 +186,19 @@ export default function Register() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="gender">Gender</Label>
-                  <select id="gender" name="gender" value={form.gender} onChange={handleChange} className={INPUT_CLASS}>
-                    <option value="">Select…</option>
-                    <option value="MALE">Male</option>
-                    <option value="FEMALE">Female</option>
-                    <option value="UNSPECIFIED">Prefer not to say</option>
-                  </select>
+                  <Select
+                    value={form.gender}
+                    onValueChange={(v: string) => handleChange({ target: { name: "gender", value: v } } as ChangeEvent<HTMLSelectElement>)}
+                  >
+                    <SelectTrigger id="gender" className="w-full">
+                      <SelectValue placeholder="Select…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MALE">Male</SelectItem>
+                      <SelectItem value="FEMALE">Female</SelectItem>
+                      <SelectItem value="UNSPECIFIED">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>

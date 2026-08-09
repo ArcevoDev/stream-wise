@@ -29,10 +29,12 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 
 /**
  * Role guard. Must run AFTER authenticateToken. Rejects the request unless
- * the verified token's role is in the allowed set.
+ * the verified token's role is in the allowed set. The payload role is typed
+ * `UserRole | "GUEST"`; "GUEST" is never in the allowed set, so it is
+ * rejected at runtime exactly as intended.
  */
 export function requireRole(...roles: UserRole[]): (req: Request, res: Response, next: NextFunction) => void {
-  const allowed = new Set<UserRole>(roles);
+  const allowed = new Set<AuthTokenPayload["role"]>(roles);
   return (req: Request, res: Response, next: NextFunction): void => {
     const role = req.student?.role;
     if (!role || !allowed.has(role)) {

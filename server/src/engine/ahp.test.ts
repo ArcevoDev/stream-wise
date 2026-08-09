@@ -8,7 +8,7 @@ import {
 describe("computeAhpWeights", () => {
   it("derives the canonical weights [0.540, 0.297, 0.163] from the expert matrix", () => {
     const result = computeAhpWeights(DEFAULT_PAIRWISE_MATRIX);
-    // Thesis §3.5.2 — five guidance counsellors' pairwise judgements.
+    // Thesis §3.5.2: five guidance counsellors' pairwise judgements.
     expect(result.weights[0]).toBeCloseTo(0.54, 2);
     expect(result.weights[1]).toBeCloseTo(0.297, 2);
     expect(result.weights[2]).toBeCloseTo(0.163, 2);
@@ -34,7 +34,7 @@ describe("computeAhpWeights", () => {
   });
 
   it("throws when CR exceeds 0.10 (Saaty rejection)", () => {
-    // A wildly inconsistent matrix — C1 vs C2 = 9, C2 vs C1 = 9 breaks reciprocity
+    // A wildly inconsistent matrix: C1 vs C2 = 9, C2 vs C1 = 9 breaks reciprocity
     // and pushes the CR far past 0.10.
     const inconsistent = [
       [1, 9, 1 / 9],

@@ -26,6 +26,46 @@ function signToken(student: TokenSubject): string {
   );
 }
 
+/**
+ * POST /api/auth/guest: one-click reviewer/visitor session.
+ *
+ * Mints a short-lived JWT with the synthetic role "GUEST" and NO database
+ * row. A guest can only browse the marketing + auth surface: every
+ * assessment/admin route sits behind requireRole(STUDENT|staff), which
+ * rejects "GUEST", so a guest token can never read or write student data.
+ * This exists so a supervisor/reviewer can poke around the app without
+ * creating an account. Tokens are deliberately short-lived (24h).
+ */
+export const guestLogin = asyncHandler(async (_req: Request, res: Response) => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    res.status(500).json({ error: "Server misconfiguration: JWT_SECRET not set" });
+    return;
+  }
+
+  const token = jwt.sign(
+    {
+      id: "guest",
+      email: "guest@streamwise.app",
+      fullName: "Guest Reviewer",
+      role: "GUEST",
+    },
+    secret,
+    { expiresIn: "24h" }
+  );
+
+  res.json({
+    token,
+    student: {
+      id: "guest",
+      fullName: "Guest Reviewer",
+      email: "guest@streamwise.app",
+      role: "GUEST",
+    },
+    guest: true,
+  });
+});
+
 export const register = asyncHandler<Request<Record<string, never>, unknown, RegisterInput>>(
   async (req, res: Response) => {
     const {
@@ -102,15 +142,22 @@ export const login = asyncHandler<Request<Record<string, never>, unknown, LoginI
       data: { lastLoginAt: new Date() },
     });
 
-    // P1-2: audit the successful login (best-effort, never breaks the response).
-    await writeAudit(req, { action: "LOGIN", studentId: student.id });
+    // P1-2: audit the successful login. The actor IS the student (there's no
+    // token on req yet : login happens before signToken), so attribute the
+    // action to them explicitly rather than relying on req.student.
+    await writeAudit(req, {
+      action: "LOGIN",
+      studentId: student.id,
+      actorId: student.id,
+      actorRole: student.role,
+    });
 
     const token = signToken(student);
     res.json({ token, student: { id: student.id, fullName: student.fullName, email: student.email, role: student.role } });
   }
 );
 
-/** GET /api/auth/profile — the signed-in user's identity + consent status. */
+/** GET /api/auth/profile: the signed-in user's identity + consent status. */
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
   const student = await prisma.student.findUnique({
     where: { id: req.student!.id },
@@ -144,6 +191,58 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/auth/progress: the furthest assessment step a student has
+ * completed, derived from server-side rows (single source of truth).
+ *
+ *   "consent"     → hasn't granted consent yet (the gate)
+ *   "scores"      → scores saved, no RIASEC profile yet
+ *   "riasec"      → RIASEC done, no BFI profile yet
+ *   "personality" → BFI done, no recommendation yet
+ *   "results"     → recommendation exists (has a history row)
+ *
+ * Used by the client's resume-step routing so a student who logged out
+ * mid-assessment is routed back to where they stopped.
+ */
+export const getProgress = asyncHandler(async (req: Request, res: Response) => {
+  const studentId = req.student!.id;
+
+  const [student, profile, riasec, personality, recommendation] = await Promise.all([
+    prisma.student.findUnique({
+      where: { id: studentId },
+      select: { consentStatus: true },
+    }),
+    prisma.academicProfile.findUnique({ where: { studentId }, select: { id: true } }),
+    prisma.riasecProfile.findUnique({ where: { studentId }, select: { id: true } }),
+    prisma.personalityProfile.findUnique({ where: { studentId }, select: { id: true } }),
+    prisma.recommendationLog.findFirst({
+      where: { studentId },
+      orderBy: { generatedAt: "desc" },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!student) {
+    res.status(404).json({ error: "Student not found" });
+    return;
+  }
+
+  const step =
+    student.consentStatus !== "granted"
+      ? "consent"
+      : !profile
+        ? "scores"
+        : !riasec
+          ? "riasec"
+          : !personality
+            ? "personality"
+            : recommendation
+              ? "results"
+              : "personality";
+
+  res.json({ step });
+});
+
+/**
  * POST /api/auth/consent. P0-4a consent recording (ethics requirement).
  * All four consent points must be true to record consent as "granted";
  * anything less is recorded as "withdrawn" so the assessment flow can
@@ -169,7 +268,7 @@ export const recordConsent = asyncHandler<Request<Record<string, never>, unknown
       },
     });
 
-    // Consent is the ethics backbone of the study — record it in the audit
+    // Consent is the ethics backbone of the study: record it in the audit
     // trail so the four granted points + version are reconstructable.
     await writeAudit(req, {
       action: "CONSENT_RECORDED",

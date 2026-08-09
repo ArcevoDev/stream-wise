@@ -1,4 +1,4 @@
-// Module barrel. Only the route objects are re-exported here — controllers
+// Module barrel. Only the route objects are re-exported here: controllers
 // stay module-private so names like `getProfile` (auth + profile both export
 // one) can never collide through the barrel. Import controllers directly from
 // their module when needed.

@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { api } from "@/api";
 import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
+import { useLocalDraft } from "@/hooks/useLocalDraft";
+import { useAuth } from "@/context/AuthContext";
 import type { BfiQuestion, BfiTrait } from "@/types/index";
 import { Smile, Loader2, AlertCircle, ArrowRight } from "lucide-react";
 import { Button, Card, CardContent } from "@arcevo/facet-components";
@@ -40,9 +42,16 @@ const TRAIT_NAMES: Record<BfiTrait, string> = {
 
 export default function Personality() {
   const navigate = useNavigate();
+  const { student } = useAuth();
 
   const [questions, setQuestions] = useState<BfiQuestion[]>([]);
-  const [responses, setResponses] = useState<Record<number, number>>({});
+  // BFI responses autosave per student. Keyed only by question id: questions
+  // are served dynamically, so ids are stable enough to survive refreshes.
+  const [responses, setResponses, clearResponses] = useLocalDraft<Record<number, number>>(
+    "dss_draft_bfi",
+    {},
+    student?.id,
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -80,10 +89,11 @@ export default function Personality() {
         .sort((a, b) => a.id - b.id)
         .map((q) => responses[q.id]!);
       await api.post("/bfi/submit", { responses: orderedResponses });
+      clearResponses(); // submitted, drop the autosave draft
       toast.success("Personality profile saved!", {
         description: "Generating your personalised recommendation now…",
       });
-      navigate("/results");
+      navigate("/results", { state: { justSubmitted: true } });
     } catch (err) {
       const msg = getApiErrorMessage(err, "Submission failed. Please try again.");
       setError(msg);
@@ -112,7 +122,12 @@ export default function Personality() {
   return (
     <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-2xl mx-auto">
-        <ProgressBar step={3} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
+        <ProgressBar
+          step={3}
+          total={4}
+          labels={["Scores", "Interests", "Personality", "Results"]}
+          stepPct={questions.length > 0 ? (totalAnswered / questions.length) * 100 : 0}
+        />
 
         <div className="mt-6">
           <Card variant="glass" className="rounded-2xl border-border/60">

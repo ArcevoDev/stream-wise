@@ -26,6 +26,9 @@ Thumbs.db
 npm-debug.log*
 pnpm-debug.log*
 
+# Agent session scratch (session-only; never committed)
+.agent/
+
 # IDE
 .vscode/
 .idea/

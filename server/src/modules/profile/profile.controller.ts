@@ -33,7 +33,7 @@ export const saveScores = asyncHandler<Request<Record<string, never>, unknown, A
     // Give the transaction a generous window to start. Prisma's default is 5s
     // and P2028 ("Unable to start a transaction in the given time") fires when
     // the pool is momentarily saturated (e.g. right after a tsx watch reload
-    // or under bursty concurrent requests) — the queries themselves are fast.
+    // or under bursty concurrent requests): the queries themselves are fast.
     const results = await prisma.$transaction(
       [
         ...scores.map((entry) =>

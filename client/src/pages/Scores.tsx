@@ -7,9 +7,9 @@ import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
 import { ClipboardList, ArrowRight, AlertCircle, BarChart3, Loader2 } from "lucide-react";
-import { Button, Input, Label, Card, CardContent } from "@arcevo/facet-components";
+import { Button, Input, Label, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@arcevo/facet-components";
 import { Alert, AlertDescription } from "@/components/Alert";
-import { Subject, AcademicLevel, AcademicStream } from "server/enums";
+import { Subject, AcademicLevel, AcademicStream } from "@/types";
 
 interface SubjectField {
   subject: Subject;
@@ -49,8 +49,6 @@ const STREAM_LABELS: Record<AcademicStream, string> = {
   [AcademicStream.HUMANITIES]: "Humanities (Arts)",
   [AcademicStream.BUSINESS]: "Business / Commercial",
 };
-
-const SELECT_CLASS = "flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 type ScoresForm = Record<string, string> & { jss3Average: string };
 
@@ -156,11 +154,11 @@ export default function Scores() {
         jss3OverallAverage: parseFloat(scores.jss3Average),
       };
       await api.post("/profile/scores", payload);
-      clearDraft(); // submitted — drop the autosave draft so a refresh can't re-post it
+      clearDraft(); // submitted, drop the autosave draft so a refresh can't re-post it
       toast.success("Academic scores saved!", {
         description: "Moving on to the Interest Assessment.",
       });
-      navigate("/riasec");
+      navigate("/riasec", { state: { justSubmitted: true } });
     } catch (err) {
       const msg = getApiErrorMessage(err, "Failed to save scores. Please try again.");
       setError(msg);
@@ -186,7 +184,12 @@ export default function Scores() {
   return (
     <div className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-xl mx-auto">
-        <ProgressBar step={1} total={4} labels={["Scores", "Interests", "Personality", "Results"]} />
+        <ProgressBar
+          step={1}
+          total={4}
+          labels={["Scores", "Interests", "Personality", "Results"]}
+          stepPct={totalFields > 0 ? (filledCount / totalFields) * 100 : 0}
+        />
 
         <div className="mt-8">
           <Card variant="glass" className="rounded-2xl border-border/60">
@@ -206,23 +209,21 @@ export default function Scores() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="currentStream">Current SS1 Stream</Label>
-                  <select
-                    id="currentStream"
-                    name="currentStream"
-                    className={SELECT_CLASS}
+                  <Select
                     value={currentStream}
-                    onChange={handleStreamChange}
-                    required
+                    onValueChange={(v) => handleStreamChange({ target: { value: v } } as ChangeEvent<HTMLSelectElement>)}
                   >
-                    <option value="" disabled>
-                      Select your current stream…
-                    </option>
-                    {(Object.values(AcademicStream) as AcademicStream[]).map((s) => (
-                      <option key={s} value={s}>
-                        {STREAM_LABELS[s]}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger id="currentStream" className="w-full">
+                      <SelectValue placeholder="Select your current stream…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.values(AcademicStream) as AcademicStream[]).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {STREAM_LABELS[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground mt-1">
                     The stream you're currently placed in. This determines which SS1 subjects we ask for below.
                   </p>

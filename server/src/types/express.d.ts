@@ -10,7 +10,10 @@ export interface AuthTokenPayload {
   id: string;
   email: string;
   fullName: string;
-  role: UserRole;
+  /** "GUEST" is a synthetic role minted by POST /auth/guest (no DB row).
+   * requireRole(...) rejects it, so guests can never reach assessment or
+   * admin data, only the marketing + auth surface. */
+  role: UserRole | "GUEST";
 }
 
 declare global {

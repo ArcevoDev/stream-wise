@@ -14,15 +14,19 @@ import { adminStudentsQuerySchema, adminAuditQuerySchema } from "@/validators/sc
 
 export const adminRoutes = Router();
 
-// Every admin route requires an ADMIN token. The JWT role claim is embedded
-// at login/register (auth.controller.ts) and enforced here. Students and
-// counselors get a 403 before any handler runs.
-adminRoutes.use(authenticateToken, requireRole(UserRole.ADMIN));
+// The staff console is open to every staff role as a READ-ONLY surface
+// (ADMIN, SCHOOL_ADMIN, COUNSELOR). A bare 403 on the first /admin/* call
+// was bouncing non-ADMIN staff straight back to /login via the axios
+// interceptor, which treats 403 as a dead session. Only the mutation
+// endpoints (CSV export, re-score) stay ADMIN-only, enforced below.
+adminRoutes.use(authenticateToken, requireRole(UserRole.ADMIN, UserRole.SCHOOL_ADMIN, UserRole.COUNSELOR));
 
 adminRoutes.get("/stats", getStats);
 adminRoutes.get("/analytics", getAnalytics);
 adminRoutes.get("/students", validateQuery(adminStudentsQuerySchema), getStudents);
 adminRoutes.get("/students/:id", getStudentDetail);
 adminRoutes.get("/audit", validateQuery(adminAuditQuerySchema), getAuditLogs);
-adminRoutes.get("/export/csv", exportCsv);
-adminRoutes.post("/rescore/:studentId", rescoreStudent);
+// Mutations: ADMIN-only (defense in depth : the client hides them for
+// non-ADMIN, but the server is the real gate).
+adminRoutes.get("/export/csv", requireRole(UserRole.ADMIN), exportCsv);
+adminRoutes.post("/rescore/:studentId", requireRole(UserRole.ADMIN), rescoreStudent);

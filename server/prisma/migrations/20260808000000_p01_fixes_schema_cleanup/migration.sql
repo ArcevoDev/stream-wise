@@ -1,7 +1,7 @@
 -- AlterEnum
 -- The seeded subject_catalog still contains rows for removed enum values.
 -- The catalog is rebuilt idempotently by seed.ts, so purge them before the
--- enum cast (no other table uses the removed values — verified 2026-08-08).
+-- enum cast (no other table uses the removed values : verified 2026-08-08).
 DELETE FROM "subject_catalog"
 WHERE "subject" IN (
   'SOCIAL_STUDIES', 'BOOK_KEEPING', 'MARKETING', 'OFFICE_PRACTICE', 'STORE_MANAGEMENT',

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { createHash } from "node:crypto";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
 import { writeAudit } from "@/services/audit.js";
@@ -9,12 +10,84 @@ import {
   DEFAULT_STREAM_TRAIT_MAPPING,
 } from "@/engine/index.js";
 import { AcademicLevel, AcademicStream, Subject } from "@prisma-client";
-import { STREAM_TO_ENUM, type PersonalityInput } from "@/types/domain.js";
+import { STREAM_TO_ENUM, ENUM_TO_STREAM, type PersonalityInput } from "@/types/domain.js";
 import type { RecommendHistoryQuery } from "@/validators/schemas.js";
 
 const ALGORITHM_VERSION = "ahp-saw-v1.1";
 /** Fallback session name when the AcademicSession table is not seeded. */
 const FALLBACK_ACADEMIC_SESSION = "2025/2026";
+
+/**
+ * Deterministic, key-sorted serialization so the same inputs ALWAYS produce
+ * the same fingerprint regardless of object key order or Date formatting.
+ */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (value instanceof Date) return `"${value.toISOString()}"`;
+  if (Array.isArray(value)) return `[${value.map((v) => stableStringify(v)).join(",")}]`;
+  const entries = Object.entries(value as Record<string, unknown>)
+    .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`)
+    .sort();
+  return `{${entries.join(",")}}`;
+}
+
+function fingerprintOf(inputsSnapshot: unknown): string {
+  return createHash("sha256").update(stableStringify(inputsSnapshot)).digest("hex");
+}
+
+/**
+ * Build the API-facing recommendation shape from a persisted log row so the
+ * same shape is returned whether we create a fresh log or reuse the latest.
+ */
+function recommendationFromLog(
+  log: {
+    topStream: AcademicStream;
+    vScience: number;
+    vHumanities: number;
+    vBusiness: number;
+    confidenceLevel: number;
+    guidanceInsight: string;
+    ahpWeightsSnapshot: unknown;
+    inputsSnapshot: unknown;
+  },
+  weightSetMeta?: {
+    id: string | null;
+    labels: [string, string, string] | null;
+    cr: number | null;
+  }
+) {
+  const snapshot = (log.ahpWeightsSnapshot ?? {}) as {
+    weights?: number[];
+    source?: string;
+  };
+  const inputs = (log.inputsSnapshot ?? {}) as { personalitySource?: string };
+  return {
+    // The engine works in "Science" strings; the DB stores the enum. The
+    // client renders topStream directly, so bridge back to the Stream type.
+    topStream: ENUM_TO_STREAM[log.topStream],
+    vScience: log.vScience,
+    vHumanities: log.vHumanities,
+    vBusiness: log.vBusiness,
+    // The client renders a ranked list (StreamRankings); reconstruct it from
+    // the persisted Vᵢ values so a stored row displays identically to a
+    // freshly computed one.
+    ranked: [
+      { stream: "Science", score: log.vScience },
+      { stream: "Humanities", score: log.vHumanities },
+      { stream: "Business", score: log.vBusiness },
+    ].sort((a, b) => b.score - a.score),
+    confidenceLevel: log.confidenceLevel,
+    guidanceInsight: log.guidanceInsight,
+    ahpWeights: {
+      weights: snapshot.weights ?? [0.540, 0.297, 0.163],
+      weightSetId: weightSetMeta?.id ?? null,
+      labels: weightSetMeta?.labels ?? ["Academic Performance", "Vocational Interest (RIASEC)", "Personality Traits"],
+      cr: weightSetMeta?.cr ?? 0.007,
+      consistent: true,
+    },
+    personalitySource: inputs.personalitySource ?? "renormalized",
+  };
+}
 
 /**
  * P0-3b: students who reach recommendation generation WITHOUT a BFI-20
@@ -175,6 +248,58 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     DEFAULT_STREAM_TRAIT_MAPPING
   );
 
+  // --- Idempotent recommendation (DB-level) --------------------------------
+  // Two concurrent POSTs (React StrictMode double-effect) must never stack
+  // two identical history rows. The SHA-256 fingerprint of the exact inputs
+  // is unique in the DB : the first upsert wins, the second updates the
+  // same row in place instead of inserting a duplicate. Re-visiting /results
+  // with unchanged inputs also reuses the existing row.
+  const inputsSnapshot = {
+    academic,
+    academicByStream,
+    riasec,
+    personality,
+    personalitySource,
+    sawWeights,
+  };
+  const inputFingerprint = fingerprintOf(inputsSnapshot);
+  const latestLog = await prisma.recommendationLog.findFirst({
+    where: { studentId },
+    orderBy: { generatedAt: "desc" },
+    select: {
+      id: true,
+      topStream: true,
+      vScience: true,
+      vHumanities: true,
+      vBusiness: true,
+      confidenceLevel: true,
+      guidanceInsight: true,
+      ahpWeightsSnapshot: true,
+      inputsSnapshot: true,
+      inputFingerprint: true,
+    },
+  });
+  const latestSnapshot = (latestLog?.inputsSnapshot ?? null) as unknown as typeof inputsSnapshot | null;
+  if (latestLog && latestSnapshot && fingerprintOf(latestSnapshot) === inputFingerprint) {
+    res.json({
+      // "reused": the student already has this exact recommendation. Lets the
+      // client skip the "Recommendation ready" toast on re-visits.
+      generated: false,
+      recommendation: {
+        ...recommendationFromLog(latestLog, {
+          id: weightSetId,
+          labels: activeWeightSet
+            ? (activeWeightSet.criterionLabels as [string, string, string])
+            : null,
+          cr: activeWeightSet?.cr ?? null,
+        }),
+        contributionBreakdown: explainRecommendation(sawResult, sawWeights),
+        logId: latestLog.id,
+      },
+    });
+    return;
+  }
+
   // --- P0-2d: per-criterion contribution breakdown (explainability) ---
   const contributionBreakdown = explainRecommendation(sawResult, sawWeights);
 
@@ -186,62 +311,118 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
     sawResult
   );
 
-  const log = await prisma.recommendationLog.create({
-    data: {
-      studentId,
-      topStream: STREAM_TO_ENUM[sawResult.topStream],
-      vScience: sawResult.vScience,
-      vHumanities: sawResult.vHumanities,
-      vBusiness: sawResult.vBusiness,
-      confidenceLevel: sawResult.confidenceLevel,
-      guidanceInsight,
-      algorithmVersion: ALGORITHM_VERSION,
-      ahpWeightsSnapshot: JSON.parse(JSON.stringify({ weights: sawWeights, source: weightSetId ? "weight-set" : "fallback" })),
-      // P0-5a: immutable FK to the exact weight set used.
-      ahpWeightSetId: weightSetId,
-      // JAMB cycle the recommendation was generated under (matches
-      // JambCourse.admissionCycle + the log's academicSessionName). The
-      // AHP weight-set version lives on ahpWeightSetId's row instead.
-      jambRequirementVersion: academicSessionName,
-      academicSessionName,
-      // Closes the Explainability Gap inside the audit logs
-      inputsSnapshot: JSON.parse(
-        JSON.stringify({ academic, academicByStream, riasec, personality, personalitySource, sawWeights })
-      ),
-    },
+  const data = {
+    studentId,
+    topStream: STREAM_TO_ENUM[sawResult.topStream],
+    vScience: sawResult.vScience,
+    vHumanities: sawResult.vHumanities,
+    vBusiness: sawResult.vBusiness,
+    confidenceLevel: sawResult.confidenceLevel,
+    guidanceInsight,
+    algorithmVersion: ALGORITHM_VERSION,
+    ahpWeightsSnapshot: JSON.parse(JSON.stringify({ weights: sawWeights, source: weightSetId ? "weight-set" : "fallback" })),
+    // P0-5a: immutable FK to the exact weight set used.
+    ahpWeightSetId: weightSetId,
+    // JAMB cycle the recommendation was generated under (matches
+    // JambCourse.admissionCycle + the log's academicSessionName). The
+    // AHP weight-set version lives on ahpWeightSetId's row instead.
+    jambRequirementVersion: academicSessionName,
+    academicSessionName,
+    // Closes the Explainability Gap inside the audit logs
+    inputsSnapshot: JSON.parse(JSON.stringify(inputsSnapshot)),
+    inputFingerprint,
+  };
+
+  // Atomic create-or-reuse. A concurrent identical POST that slipped past the
+  // findFirst above now hits the unique inputFingerprint index and is skipped
+  // (count = 0) instead of inserting a duplicate row.
+  const { count } = await prisma.recommendationLog.createMany({
+    data,
+    skipDuplicates: true,
+  });
+  const log = await prisma.recommendationLog.findFirst({
+    where: { inputFingerprint },
+    orderBy: { generatedAt: "desc" },
   });
 
-  // P1-2: audit the recommendation generation.
-  await writeAudit(req, {
-    action: "RECOMMENDATION_GENERATED",
-    studentId,
-    metadata: {
-      topStream: STREAM_TO_ENUM[sawResult.topStream],
-      confidenceLevel: sawResult.confidenceLevel,
-      personalitySource,
-      weightSetId,
+  if (!log) {
+    res.status(500).json({ error: "Recommendation could not be persisted." });
+    return;
+  }
+
+  // P1-2: audit the recommendation generation (only when we actually created).
+  if (count > 0) {
+    await writeAudit(req, {
+      action: "RECOMMENDATION_GENERATED",
+      studentId,
+      metadata: {
+        topStream: STREAM_TO_ENUM[sawResult.topStream],
+        confidenceLevel: sawResult.confidenceLevel,
+        personalitySource,
+        weightSetId,
+        logId: log.id,
+      },
+    });
+  }
+
+  res.json({
+    generated: true,
+    recommendation: {
+      ...recommendationFromLog(log, {
+        id: weightSetId,
+        labels: activeWeightSet
+          ? (activeWeightSet.criterionLabels as [string, string, string])
+          : null,
+        cr: activeWeightSet?.cr ?? null,
+      }),
+      contributionBreakdown,
       logId: log.id,
     },
   });
+});
+
+export const getRecommendationById = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const log = await prisma.recommendationLog.findFirst({
+    where: { id, studentId: req.student!.id },
+    select: {
+      id: true,
+      topStream: true,
+      vScience: true,
+      vHumanities: true,
+      vBusiness: true,
+      confidenceLevel: true,
+      guidanceInsight: true,
+      ahpWeightsSnapshot: true,
+      inputsSnapshot: true,
+      ahpWeightSetId: true,
+      generatedAt: true,
+    },
+  });
+
+  if (!log) {
+    res.status(404).json({ error: "Recommendation not found" });
+    return;
+  }
+
+  // Resolve the weight-set labels/CR the row was generated under, falling
+  // back to the row's own snapshot so old rows stay self-describing.
+  const weightSet = log.ahpWeightSetId
+    ? await prisma.ahpWeightSet.findUnique({ where: { id: log.ahpWeightSetId } })
+    : null;
 
   res.json({
     recommendation: {
-      ...sawResult,
-      guidanceInsight,
-      contributionBreakdown,
-      // P0-1c: expose the full weight-set metadata for the transparency UI
-      // (labels + CR). Falls back to engine defaults if seeding was skipped.
-      ahpWeights: {
-        weights: sawWeights,
-        weightSetId,
-        labels: activeWeightSet
-          ? (activeWeightSet.criterionLabels as [string, string, string])
-          : ["Academic Performance", "Vocational Interest (RIASEC)", "Personality Traits"],
-        cr: activeWeightSet?.cr ?? 0.007,
-        consistent: true,
-      },
-      personalitySource,
+      ...recommendationFromLog(log, {
+        id: log.ahpWeightSetId,
+        labels: weightSet
+          ? (weightSet.criterionLabels as [string, string, string])
+          : null,
+        cr: weightSet?.cr ?? null,
+      }),
       logId: log.id,
+      generatedAt: log.generatedAt,
     },
   });
 });
@@ -263,4 +444,21 @@ export const getHistory = asyncHandler(async (req: Request, res: Response) => {
     history: logs,
     pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
   });
+});
+
+/** Delete every RecommendationLog row for the current student. Raw assessment
+ * data (SubjectScore / RiasecResponse / BfiResponse) is deliberately kept so
+ * the student can retake the assessment and generate fresh results. */
+export const clearHistory = asyncHandler(async (req: Request, res: Response) => {
+  const { count } = await prisma.recommendationLog.deleteMany({
+    where: { studentId: req.student!.id },
+  });
+
+  await writeAudit(req, {
+    action: "RECOMMENDATION_HISTORY_CLEARED",
+    studentId: req.student!.id,
+    metadata: { deletedCount: count },
+  });
+
+  res.json({ deletedCount: count });
 });

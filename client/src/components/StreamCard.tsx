@@ -4,6 +4,7 @@ import type { Stream } from "@/types/index.js";
 interface StreamMeta {
   Icon: LucideIcon;
   subjects: string;
+  /** Theme-aware container: token + alpha, works in light and dark. */
   bg: string;
   badge: string;
   bar: string;
@@ -11,33 +12,36 @@ interface StreamMeta {
   iconColor: string;
 }
 
+// Stream accents map onto the tailwind `science`/`humanities`/`business`
+// colors from tailwind.config.ts (stable hexes). Tints use /10 alpha so they
+// read correctly on both light and dark backgrounds.
 const STREAM_META: Record<Stream, StreamMeta> = {
   Science: {
     Icon: FlaskConical,
     subjects: "Biology · Chemistry · Physics",
-    bg: "bg-blue-50 border-blue-200",
-    badge: "bg-blue-100 text-blue-700",
-    bar: "bg-blue-500",
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
+    bg: "bg-science/10 border-science/40",
+    badge: "bg-science/15 text-science",
+    bar: "bg-science",
+    iconBg: "bg-science/15",
+    iconColor: "text-science",
   },
   Humanities: {
     Icon: BookOpen,
     subjects: "Literature · Government · History",
-    bg: "bg-purple-50 border-purple-200",
-    badge: "bg-purple-100 text-purple-700",
-    bar: "bg-purple-500",
-    iconBg: "bg-purple-100",
-    iconColor: "text-purple-600",
+    bg: "bg-humanities/10 border-humanities/40",
+    badge: "bg-humanities/15 text-humanities",
+    bar: "bg-humanities",
+    iconBg: "bg-humanities/15",
+    iconColor: "text-humanities",
   },
   Business: {
     Icon: TrendingUp,
     subjects: "Economics · Commerce · Accounting",
-    bg: "bg-emerald-50 border-emerald-200",
-    badge: "bg-emerald-100 text-emerald-700",
-    bar: "bg-emerald-500",
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-600",
+    bg: "bg-business/10 border-business/40",
+    badge: "bg-business/15 text-business",
+    bar: "bg-business",
+    iconBg: "bg-business/15",
+    iconColor: "text-business",
   },
 };
 

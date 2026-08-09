@@ -5,10 +5,15 @@ interface ProgressBarProps {
   step: number;
   total?: number;
   labels?: string[];
+  /** Optional 0-100 completion of the current step; defaults to 0 when omitted. */
+  stepPct?: number;
 }
 
-export default function ProgressBar({ step, total = 4, labels = [] }: ProgressBarProps) {
-  const pct = Math.round((step / total) * 100);
+export default function ProgressBar({ step, total = 4, labels = [], stepPct = 0 }: ProgressBarProps) {
+  // The bar starts at 0% and only accrues once the student begins the step:
+  // completed steps earn their full share, plus a fraction of the current one.
+  const clampedStepPct = Math.min(Math.max(stepPct, 0), 100);
+  const pct = Math.round((((step - 1) + clampedStepPct / 100) / total) * 100);
 
   return (
     <div className="w-full">

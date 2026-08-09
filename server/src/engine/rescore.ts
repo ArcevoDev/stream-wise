@@ -47,7 +47,7 @@ export function rescoreRiasec(
 
   if (expectedVersion) {
     // Rows must carry a matching instrumentVersion. A NULL version (legacy
-    // pre-versioning data) is also a mismatch — it cannot be trusted to be
+    // pre-versioning data) is also a mismatch: it cannot be trusted to be
     // the current instrument, so refuse rather than silently rescore it.
     const bad = responses.find((r) => (r.instrumentVersion ?? "") !== expectedVersion);
     if (bad) {
@@ -84,7 +84,7 @@ export function rescoreBfi(
 
   if (expectedVersion) {
     // Rows must carry a matching instrumentVersion. A NULL version (legacy
-    // pre-versioning data) is also a mismatch — it cannot be trusted to be
+    // pre-versioning data) is also a mismatch: it cannot be trusted to be
     // the current instrument, so refuse rather than silently rescore it.
     const bad = responses.find((r) => (r.instrumentVersion ?? "") !== expectedVersion);
     if (bad) {

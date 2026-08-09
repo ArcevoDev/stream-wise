@@ -67,9 +67,12 @@ interface JambValidation {
 
 interface AuditEntry {
   id: string;
+  studentId: string | null;
   action: string;
   details: string | null;
   createdAt: string;
+  actor: { id: string; fullName: string; email: string; role: UserRole | null } | null;
+  student: { id: string; fullName: string; email: string } | null;
 }
 
 interface StudentDetail {
@@ -474,7 +477,20 @@ export default function AdminStudentDetail() {
                           <p className="text-xs text-muted-foreground">{log.details}</p>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground">{formatDate(log.createdAt)}</span>
+                      <div className="text-right">
+                        <p className="text-[11px] text-muted-foreground">
+                          by{" "}
+                          <span className="font-medium text-foreground">
+                            {log.actor?.fullName ?? "unknown"}
+                          </span>
+                          {log.actor?.role && (
+                            <span className="ml-1 font-mono text-[10px] uppercase text-muted-foreground">
+                              {log.actor.role.replaceAll("_", " ")}
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{formatDate(log.createdAt)}</p>
+                      </div>
                     </div>
                   ))}
                 </div>

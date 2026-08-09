@@ -3,7 +3,7 @@
 // Usage:  pnpm create:admin  (reads ADMIN_EMAIL / ADMIN_PASSWORD from .env,
 //         falls back to dss.admin@example.com / change-me-now)
 // Creates an ADMIN account in the Student table if none exists with that
-// email. Safe to re-run — it upserts rather than duplicating.
+// email. Safe to re-run: it upserts rather than duplicating.
 // ============================================================================
 
 import "dotenv/config";

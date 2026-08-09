@@ -34,7 +34,7 @@ describe("validateJambPrerequisites", () => {
     expect(result.coverage).toBeCloseTo(1 / 3, 2);
   });
 
-  it("is a pure set-difference — careerGoal never affects compliance (spec contract)", () => {
+  it("is a pure set-difference: careerGoal never affects compliance (spec contract)", () => {
     const goal = "doctor";
     const noGoal = validateJambPrerequisites("Science", undefined, MEDICINE, ["BIOLOGY"]);
     const withGoal = validateJambPrerequisites("Science", goal, MEDICINE, ["BIOLOGY"]);

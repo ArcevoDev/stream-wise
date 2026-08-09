@@ -63,7 +63,7 @@ describe("computeRIASEC", () => {
     const scores = computeRIASEC(artistic, customMapping);
     // A=100 (0.6) + S=20 (0.4) → 68; the custom mapping makes Science and
     // Humanities both draw on A, so both are 68 and Science wins the tie
-    // only if the secondary also favours it — here both are equal.
+    // only if the secondary also favours it: here both are equal.
     expect(scores.scienceAffinity).toBeCloseTo(68, 1); // A now drives Science
     expect(scores.humanitiesAffinity).toBeCloseTo(68, 1); // A+S also drives Humanities
   });

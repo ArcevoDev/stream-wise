@@ -29,7 +29,7 @@ export function useLocalDraft<T>(key: string, initial: T, studentId?: string | n
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(value));
       } catch {
-        /* storage full / private mode — autosave is best-effort */
+        /* storage full / private mode: autosave is best-effort */
       }
     }, 250);
     return () => {

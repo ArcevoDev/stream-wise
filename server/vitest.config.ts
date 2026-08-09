@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     // The engine files import with Node16 ESM `.js` suffixes that resolve to
-    // `.ts` sources — Vite handles that automatically.
+    // `.ts` sources: Vite handles that automatically.
     include: ["src/**/*.test.ts"],
     environment: "node",
   },

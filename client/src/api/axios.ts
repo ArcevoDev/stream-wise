@@ -45,14 +45,33 @@ api.interceptors.response.use(
   (err) => {
     const status = err.response?.status;
 
-    // 401 = no/invalid token, 403 = expired token or missing role.
-    // Both mean the session is unusable. Clear it and send the user to login.
-    if (status === 401 || status === 403) {
+    // 401 = no/invalid token. The session is unusable: clear it and send the
+    // user to the landing page, which is the entry hub (sign-in lives there).
+    if (status === 401) {
       localStorage.removeItem("dss_token");
       localStorage.removeItem("dss_student");
       onAuthCleared?.();
-      if (!window.location.pathname.startsWith("/login")) {
-        window.location.replace("/login");
+      if (!window.location.pathname.startsWith("/")) {
+        window.location.replace("/");
+      }
+    }
+
+    // 403 = "Insufficient permissions" (requireRole) OR "Invalid or expired
+    // token" (authenticateToken). Only a dead token should clear the session;
+    // a staff member hitting an ADMIN-only endpoint must NOT be logged out.
+    if (status === 403) {
+      const msg = err.response?.data?.error as string | undefined;
+      if (msg === "Invalid or expired token") {
+        localStorage.removeItem("dss_token");
+        localStorage.removeItem("dss_student");
+        onAuthCleared?.();
+        if (!window.location.pathname.startsWith("/")) {
+          window.location.replace("/");
+        }
+      } else {
+        toast.error("Permission denied", {
+          description: "You don't have access to that action.",
+        });
       }
     }
 

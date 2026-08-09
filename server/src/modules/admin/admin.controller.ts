@@ -289,9 +289,36 @@ export const getAuditLogs = asyncHandler(async (req: Request, res: Response) => 
     where,
     orderBy: { createdAt: "desc" },
     take: limit,
+    include: {
+      student: { select: { id: true, fullName: true, email: true } },
+    },
   });
 
-  res.json({ logs });
+  // Resolve the actor (who performed the action) : a separate person from the
+  // subject student for staff/counselor ops. actorId may match studentId for
+  // self-actions (login, submits); historically it could be null, in which
+  // case the student is the actor.
+  const actorIds = [...new Set(logs.map((l) => l.actorId).filter((id): id is string => Boolean(id)))];
+  const actors = actorIds.length
+    ? await prisma.student.findMany({
+        where: { id: { in: actorIds } },
+        select: { id: true, fullName: true, email: true, role: true },
+      })
+    : [];
+  const actorMap = new Map(actors.map((a) => [a.id, a]));
+
+  res.json({
+    logs: logs.map(({ student, actorId, ...row }) => ({
+      ...row,
+      actorId,
+      actor: actorId
+        ? actorMap.get(actorId) ?? null
+        : student
+          ? { id: student.id, fullName: student.fullName, email: student.email, role: null }
+          : null,
+      student: student ?? null,
+    })),
+  });
 });
 
 /**

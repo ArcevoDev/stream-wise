@@ -1,14 +1,22 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./index.html",
+    "./src/**/*.{ts,tsx}",
+    // Facet ships precompiled class strings in its dist: Tailwind must scan
+    // them or every facet component's styling (dropdown z-50/bg-popover,
+    // navbar backgrounds, dialogs, …) is silently omitted from the build.
+    "./node_modules/@arcevo/facet-components/dist/**/*.{js,cjs,mjs}",
+    "./node_modules/@arcevo/facet-layout/dist/**/*.{js,cjs,mjs}",
+  ],
   theme: {
     extend: {
       colors: {
         // Facet design tokens (@arcevo/facet-tokens/tokens.css) are OKLCH
         // CSS custom properties. Map the semantic names the facet components
         // use (bg-primary, text-foreground, border-input, …) straight to
-        // var() — no hsl() wrapper since the tokens are already OKLCH.
+        // var(), no hsl() wrapper since the tokens are already OKLCH.
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
@@ -59,7 +67,7 @@ export default {
           "accent-foreground": "var(--sidebar-accent-foreground)",
           border: "var(--sidebar-border)",
         },
-        // Charts — facet Alpha Palette chart tokens
+        // Charts: facet Alpha Palette chart tokens
         chart: {
           1: "var(--chart-1)",
           2: "var(--chart-2)",
@@ -67,7 +75,7 @@ export default {
           4: "var(--chart-4)",
           5: "var(--chart-5)",
         },
-        // Stream colours for the recommendation / admin dashboards —
+        // Stream colours for the recommendation / admin dashboards:
         // stable hexes so charts stay consistent across themes.
         science: "#3B82F6",
         humanities: "#8B5CF6",

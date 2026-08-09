@@ -9,11 +9,97 @@ export type Gender = "MALE" | "FEMALE" | "UNSPECIFIED";
 
 export type UserRole = "STUDENT" | "COUNSELOR" | "SCHOOL_ADMIN" | "ADMIN";
 
+/** Synthetic role minted by POST /auth/guest (reviewer browsing session).
+ * Guests can only reach the marketing + auth pages; every guarded route
+ * (assessment, admin) redirects them to register/login. */
+export type GuestRole = "GUEST";
+
+// Academic domain enums mirroring server/prisma/schema.prisma. Kept local so
+// the client build has no dependency on `prisma generate` (Vercel static build
+// must not need a DATABASE_URL).
+export type AcademicStream = "SCIENCE" | "HUMANITIES" | "BUSINESS";
+
+export const AcademicStream = {
+  SCIENCE: "SCIENCE",
+  HUMANITIES: "HUMANITIES",
+  BUSINESS: "BUSINESS",
+} as const;
+
+export type AcademicLevel = "JSS3" | "SS1";
+
+export const AcademicLevel = {
+  JSS3: "JSS3",
+  SS1: "SS1",
+} as const;
+
+export type Subject =
+  | "ENGLISH_LANGUAGE"
+  | "MATHEMATICS"
+  | "CITIZENSHIP_AND_HERITAGE"
+  | "DIGITAL_TECHNOLOGIES"
+  | "BIOLOGY"
+  | "CHEMISTRY"
+  | "PHYSICS"
+  | "FURTHER_MATHEMATICS"
+  | "AGRICULTURAL_SCIENCE"
+  | "ANIMAL_HUSBANDRY"
+  | "TECHNICAL_DRAWING"
+  | "FOOD_AND_NUTRITION"
+  | "HOME_MANAGEMENT"
+  | "LITERATURE_IN_ENGLISH"
+  | "GOVERNMENT"
+  | "HISTORY"
+  | "GEOGRAPHY"
+  | "CHRISTIAN_RELIGIOUS_STUDIES"
+  | "ISLAMIC_RELIGIOUS_STUDIES"
+  | "FRENCH"
+  | "YORUBA"
+  | "IGBO"
+  | "HAUSA"
+  | "ARABIC"
+  | "VISUAL_ARTS"
+  | "MUSIC"
+  | "ECONOMICS"
+  | "COMMERCE"
+  | "FINANCIAL_ACCOUNTING";
+
+export const Subject = {
+  ENGLISH_LANGUAGE: "ENGLISH_LANGUAGE",
+  MATHEMATICS: "MATHEMATICS",
+  CITIZENSHIP_AND_HERITAGE: "CITIZENSHIP_AND_HERITAGE",
+  DIGITAL_TECHNOLOGIES: "DIGITAL_TECHNOLOGIES",
+  BIOLOGY: "BIOLOGY",
+  CHEMISTRY: "CHEMISTRY",
+  PHYSICS: "PHYSICS",
+  FURTHER_MATHEMATICS: "FURTHER_MATHEMATICS",
+  AGRICULTURAL_SCIENCE: "AGRICULTURAL_SCIENCE",
+  ANIMAL_HUSBANDRY: "ANIMAL_HUSBANDRY",
+  TECHNICAL_DRAWING: "TECHNICAL_DRAWING",
+  FOOD_AND_NUTRITION: "FOOD_AND_NUTRITION",
+  HOME_MANAGEMENT: "HOME_MANAGEMENT",
+  LITERATURE_IN_ENGLISH: "LITERATURE_IN_ENGLISH",
+  GOVERNMENT: "GOVERNMENT",
+  HISTORY: "HISTORY",
+  GEOGRAPHY: "GEOGRAPHY",
+  CHRISTIAN_RELIGIOUS_STUDIES: "CHRISTIAN_RELIGIOUS_STUDIES",
+  ISLAMIC_RELIGIOUS_STUDIES: "ISLAMIC_RELIGIOUS_STUDIES",
+  FRENCH: "FRENCH",
+  YORUBA: "YORUBA",
+  IGBO: "IGBO",
+  HAUSA: "HAUSA",
+  ARABIC: "ARABIC",
+  VISUAL_ARTS: "VISUAL_ARTS",
+  MUSIC: "MUSIC",
+  ECONOMICS: "ECONOMICS",
+  COMMERCE: "COMMERCE",
+  FINANCIAL_ACCOUNTING: "FINANCIAL_ACCOUNTING",
+} as const;
+
 export interface AuthStudent {
   id: string;
   fullName: string;
   email: string;
-  role: UserRole;
+  role: UserRole | GuestRole;
 }
 
 export interface AuthResponse {
@@ -147,4 +233,73 @@ export type JambValidationResult = JambValidationSuccess | JambValidationError;
 export interface ApiErrorResponse {
   error: string;
   details?: { path: string; message: string }[];
+}
+
+// P1-5a: one row from GET /recommend/history (a RecommendationLog).
+export interface RecommendationHistoryRow {
+  id: string;
+  topStream: Stream;
+  vScience: number;
+  vHumanities: number;
+  vBusiness: number;
+  confidenceLevel: number;
+  guidanceInsight: string;
+  algorithmVersion: string;
+  ahpWeightSetId: string | null;
+  jambRequirementVersion: string | null;
+  academicSessionName: string | null;
+  generatedAt: string;
+}
+
+export interface RecommendationHistoryResponse {
+  history: RecommendationHistoryRow[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/** Single past recommendation returned by GET /recommend/history/:id. */
+export interface RecommendationDetailResponse {
+  recommendation: RecommendationResult & {
+    generatedAt: string;
+  };
+}
+
+export interface ClearHistoryResponse {
+  deletedCount: number;
+}
+
+/**
+ * Audit trail identity (GET /admin/audit). `actor` is who performed the
+ * action; `student` is the subject (may be null for system/staff-wide ops).
+ */
+export interface AuditLogRow {
+  id: string;
+  studentId: string | null;
+  actorId: string | null;
+  action: string;
+  details: string | null;
+  metadata: Record<string, unknown> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  actor: { id: string; fullName: string; email: string; role: UserRole | null } | null;
+  student: { id: string; fullName: string; email: string } | null;
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLogRow[];
+}
+
+/**
+ * Furthest assessment step a student has completed, from GET /auth/progress.
+ * Drives resume-step routing after login / on landing.
+ */
+export type AssessmentStep = "consent" | "scores" | "riasec" | "personality" | "results";
+
+export interface ProgressResponse {
+  step: AssessmentStep;
 }

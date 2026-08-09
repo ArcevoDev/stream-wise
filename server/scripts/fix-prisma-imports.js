@@ -10,7 +10,7 @@
 //
 // This is valid TypeScript-source-to-source (bundlers / tsx resolve it fine),
 // but when compiled by `tsc` to plain ESM JavaScript, tsc does NOT rewrite
-// the ".ts" extension to ".js" inside string literals — it only compiles the
+// the ".ts" extension to ".js" inside string literals: it only compiles the
 // containing file. `tsc-alias` also does not touch these because they are
 // genuine relative paths, not `@/` path-alias imports; tsc-alias's whole job
 // is alias rewriting, not extension rewriting.
@@ -25,7 +25,7 @@
 // export specifiers to `from "./xxx.js"` so Node's ESM resolver finds the
 // real compiled files.
 //
-// This only touches the generated Prisma output folder — it intentionally
+// This only touches the generated Prisma output folder: it intentionally
 // does not touch dist/src, since tsc-alias already handles `@/` aliases
 // correctly there and source files don't use raw ".ts" relative imports.
 // ============================================================================
@@ -96,7 +96,7 @@ function main() {
     console.warn(
       `[fix-prisma-imports] WARNING: No files were rewritten. ` +
         `This is unexpected if the Prisma generator still emits ".ts" relative ` +
-        `imports — verify prisma/generated/client.ts in source still contains ` +
+        `imports: verify prisma/generated/client.ts in source still contains ` +
         `lines like: import * as $Class from "./internal/class.ts"`
     );
   }

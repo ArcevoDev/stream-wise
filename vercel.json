@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter server exec prisma generate && pnpm --filter client build",
+  "buildCommand": "pnpm --filter client build",
   "outputDirectory": "client/dist",
   "installCommand": "pnpm install --ignore-scripts",
   "framework": null,

@@ -158,11 +158,15 @@ export function generateGuidanceInsight(
         ? "Your academic performance is satisfactory"
         : "Your academic performance indicates room for growth";
 
+  // Confidence is on the DISPLAY scale [50, 100] (P0-3c): 50 = the "all
+  // streams tied" baseline. Thresholds below are tuned to that scale, not a
+  // generic 0-100, so a near-baseline result reads as "some overlap" rather
+  // than a misleading "low confidence".
   const confidenceComment =
     confidenceLevel >= 80
-      ? "with a high degree of confidence"
+      ? "with a strong signal"
       : confidenceLevel >= 65
-        ? "with moderate confidence"
+        ? "with a clear signal"
         : "though your profile shows some overlap with other streams";
 
   const insight = [

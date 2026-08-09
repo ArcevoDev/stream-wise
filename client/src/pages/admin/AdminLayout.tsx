@@ -1,5 +1,7 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import BrandLogo from "@/components/BrandLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 import {
   LayoutDashboard,
   Users,
@@ -7,7 +9,6 @@ import {
   ScrollText,
   Download,
   LogOut,
-  BookMarked,
 } from "lucide-react";
 import { Button } from "@arcevo/facet-components";
 import { api } from "@/api";
@@ -21,12 +22,14 @@ const NAV_ITEMS = [
 
 export default function AdminLayout() {
   const { student, role, logout } = useAuth();
+  const navigate = useNavigate();
   // COUNSELOR / SCHOOL_ADMIN land here read-only; the server still 403s any
   // ADMIN-only mutation (rescore, CSV export, etc.). Hide those affordances.
   const isAdmin = role === "ADMIN";
 
   function handleLogout(): void {
     logout();
+    navigate("/");
   }
 
   async function handleExport(): Promise<void> {
@@ -54,21 +57,21 @@ export default function AdminLayout() {
       .slice(0, 2) ?? "?";
 
   return (
-    <div className="flex min-h-[calc(100vh-56px)]">
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-60 shrink-0 flex-col border-r bg-muted/30">
+    <div className="min-h-screen">
+      {/* Sidebar: fixed on desktop, scrolls independently of the content */}
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col border-r bg-muted/30 z-30">
         <div className="flex items-center gap-2 px-4 py-4 border-b">
-          <span className="flex items-center rounded-lg bg-primary p-1.5 text-primary-foreground">
-            <BookMarked size={16} />
-          </span>
-          <div>
-            <p className="text-sm font-bold text-foreground leading-tight">
-              {isAdmin ? "Admin Console" : "Staff Console"}
-            </p>
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              StreamWise DSS · {role}
-            </p>
-          </div>
+          <Link to="/" className="flex items-center gap-2" aria-label="StreamWise home">
+            <BrandLogo className="h-9 w-9" />
+            <div>
+              <p className="text-sm font-bold text-foreground leading-tight">
+                {isAdmin ? "Admin Console" : "Staff Console"}
+              </p>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                StreamWise DSS · {role}
+              </p>
+            </div>
+          </Link>
         </div>
         <nav className="flex-1 space-y-1 p-3">
           {NAV_ITEMS.map((item) => (
@@ -109,6 +112,7 @@ export default function AdminLayout() {
               <p className="truncate text-sm font-medium text-foreground">{student?.fullName}</p>
               <p className="truncate text-[11px] text-muted-foreground">{student?.email}</p>
             </div>
+            <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
               <LogOut size={16} />
             </Button>
@@ -117,11 +121,27 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 pb-20 md:pl-60 md:pb-8">
         <div className="mx-auto max-w-6xl px-4 py-8 md:px-8">
           <Outlet />
         </div>
       </main>
+
+      {/* Mobile top bar: brand (→ landing), theme toggle, logout */}
+      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 py-2 backdrop-blur md:hidden">
+        <Link to="/" className="flex items-center gap-2" aria-label="StreamWise home">
+          <BrandLogo className="h-7 w-7" />
+          <span className="text-sm font-bold text-foreground">
+            {isAdmin ? "Admin Console" : "Staff Console"}
+          </span>
+        </Link>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
+            <LogOut size={16} />
+          </Button>
+        </div>
+      </div>
 
       {/* Mobile bottom nav */}
       <div className="fixed bottom-0 inset-x-0 z-20 border-t bg-background md:hidden">

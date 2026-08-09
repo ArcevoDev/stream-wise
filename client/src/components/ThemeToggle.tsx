@@ -5,7 +5,7 @@ import { Moon, Sun } from "lucide-react";
  * Plain light/dark theme switch.
  *
  * The facet ThemeToggle renders a DropdownMenu even with items={["light","dark"]}
- * (it always wraps in a DropdownMenu — see the installed chunk). This is a
+ * (it always wraps in a DropdownMenu, see the installed chunk). This is a
  * true one-click sun/moon toggle that follows the system theme initially
  * (ThemeProvider defaultTheme="system") and flips between light and dark.
  */
