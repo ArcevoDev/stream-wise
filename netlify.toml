@@ -17,15 +17,14 @@
   PNPM_VERSION = "11"
 
 [functions]
-  # esbuild is Netlify's default bundler; explicit for clarity.
-  node_bundler = "esbuild"
-  # Prisma 7's generated client CANNOT be esbuild-bundled: it reads
-  # import.meta.url at module top-level (breaks when inlined) and
-  # dynamically imports 4.9MB query-compiler wasm-base64 modules at
-  # @prisma/client/runtime/*. Marking it external ships the package
-  # unmodified in the function zip so both resolve at runtime.
+  # nft (node-file-trace) ships the full module graph unmodified instead of
+  # esbuild-inlining it. Prisma 7's generated client reads import.meta.url
+  # at module top-level (breaks when esbuild inlines it into a CJS bundle,
+  # crashing the function at load time with "path argument must be a string")
+  # and dynamically imports wasm-base64 query-compiler modules. nft keeps
+  # everything external so both resolve at runtime.
   # (Known issue: github.com/prisma/prisma/issues/27324)
-  external_node_modules = ["@prisma/client"]
+  node_bundler = "nft"
 
 # Rewrite /api/* to the Express-on-Netlify function (status 200 = rewrite,
 # keeps the URL so Express sees the full /api/... path).
