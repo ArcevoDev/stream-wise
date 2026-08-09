@@ -156,14 +156,21 @@ derived `emotionalStabilityScore`.
 
 ## Deploy notes
 
-- Client builds to Vercel as a static SPA; the server runs behind a reverse
-  proxy (Railway/Cloudflare). `VITE_API_BASE_URL` in the client env points at
-  the API origin in production.
+- Client builds to Vercel as a static SPA; the server runs as a serverless
+  function on Netlify (see `netlify.toml` : build = `pnpm --filter server
+  build`, functions dir = `server/functions`, `/api/*` rewrites to the
+  `api` function via `serverless-http`). `VITE_API_BASE_URL` in the client
+  env points at the API origin in production.
+- Netlify env vars required: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`,
+  `NODE_ENV=production`. Set `VITE_API_BASE_URL` in Vercel to the Netlify
+  site origin.
 - `prisma generate` + `prisma migrate deploy` must run on server deploy.
+  (postinstall runs generate; run `pnpm --filter server prisma:deploy`
+  manually once — the DB already has migrations from Railway.)
 - The client imports `server/enums` (the server package exports generated
   Prisma enums) : the monorepo build pipeline must keep that export intact.
 - CORS allowlist is configurable via `CLIENT_URL` (comma-separated) plus
-  `*.vercel.app` and `*.arcevocirqle.com.ng` subdomains.
+  `*.vercel.app`, `*.netlify.app`, and `*.arcevocirqle.com.ng` subdomains.
 
 ## Docs
 

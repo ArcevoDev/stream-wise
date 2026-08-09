@@ -56,8 +56,15 @@ SS2 students using an AHP-SAW multi-criteria decision engine.
    test`). The P0-3e 3-trait personality mapping and derived
    `emotionalStabilityScore` are pinned by the test vectors (incl. the
    100-profile validation simulation for thesis §3.8).
-7. **Deployment:** client builds to Vercel; server runs behind a reverse
-   proxy. `prisma generate` must be part of any deploy : the Prisma 7
+7. **Deployment:** client builds to Vercel as a static SPA; the server runs
+   on Netlify as a serverless function (see `netlify.toml`: build = `pnpm
+   --filter server build`, functions dir = `server/functions`, `/api/*`
+   rewrites to the `api` function via `serverless-http`; `app.ts` guards
+   `app.listen()` behind `IS_MAIN && !IS_SERVERLESS` so the Lambda sandbox
+   never binds a port). Required Netlify env vars: `DATABASE_URL`,
+   `JWT_SECRET`, `CLIENT_URL`, `NODE_ENV=production`; the Vercel client
+   needs `VITE_API_BASE_URL` set to the Netlify origin. `prisma generate`
+   must be part of any deploy : the Prisma 7
    generated client is NOT committed (`.gitignore` excludes
    `server/prisma/generated/`); only `server/enums` (the generated enum
    module the client imports) is re-exported via the server package.

@@ -5,8 +5,7 @@ import { toast } from "sonner";
  * BASE URL LOGIC
  * ─────────────
  * Dev:  Vite proxy rewrites /api → http://localhost:5000/api, so baseURL = "/api" works.
- * Prod: Set VITE_API_BASE_URL=https://your-server.railway.app in Vercel env vars.
- *       e.g. VITE_API_BASE_URL=https://dss-api.railway.app
+ * Prod: Set VITE_API_BASE_URL=https://streamwise-dss.netlify.app in Vercel env vars.
  *       The axios instance will then send requests directly to the server origin,
  *       bypassing Vercel's static hosting (which can't forward to an external API).
  */

@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter client build",
-  "outputDirectory": "client/dist",
+  "rootDirectory": "client",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
   "installCommand": "pnpm install --ignore-scripts",
-  "framework": null,
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/((?!assets/.*).*)",

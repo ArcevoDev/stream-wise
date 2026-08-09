@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import "dotenv/config";
+import { pathToFileURL } from "node:url";
 import type { NextFunction, Request, Response } from "express";
 
 import {
@@ -22,6 +23,20 @@ app.set("trust proxy", 1);
 const PORT = process.env["PORT"] ?? 5000;
 const IS_PROD = process.env["NODE_ENV"] === "production";
 
+// ── Serverless guard ─────────────────────────────────────────────────────
+// Netlify Functions (and Vercel/AWS Lambda) import this module as a library
+// and cannot run a long-lived process: app.listen() would keep the Lambda
+// event loop alive and hang the invocation until timeout. Only bind a port
+// when this file is the actual process entrypoint (pnpm dev / pnpm start)
+// AND we are not inside a serverless sandbox.
+const IS_SERVERLESS = Boolean(
+  process.env["AWS_LAMBDA_FUNCTION_NAME"] ||
+    (process.env["AWS_EXECUTION_ENV"] ?? "").startsWith("AWS_Lambda") ||
+    process.env["NETLIFY"]
+);
+const IS_MAIN =
+  !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
 // Security headers. CSP disabled because this is a JSON API, not an HTML server
 app.use(helmet({ contentSecurityPolicy: false }));
 
@@ -39,6 +54,7 @@ function isOriginAllowed(origin: string): boolean {
   const o = origin.replace(/\/$/, "");
   if (allowedOrigins.includes(o)) return true;
   if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(o)) return true;
+  if (/^https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(o)) return true;
   if (/^https:\/\/[a-z0-9-]+\.arcevocirqle\.com\.ng$/i.test(o)) return true;
   return false;
 }
@@ -138,9 +154,13 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ error: IS_PROD ? "Internal server error" : String(err) });
 });
 
-app.listen(PORT, () => {
-  console.log(`DSS API running. Port ${PORT}. ${process.env["NODE_ENV"] ?? "development"}`);
-  console.log(`CORS origins: ${allowedOrigins.join(", ")} + *.vercel.app + *.arcevocirqle.com.ng`);
-});
+if (IS_MAIN && !IS_SERVERLESS) {
+  app.listen(PORT, () => {
+    console.log(`DSS API running. Port ${PORT}. ${process.env["NODE_ENV"] ?? "development"}`);
+    console.log(
+      `CORS origins: ${allowedOrigins.join(", ")} + *.vercel.app + *.netlify.app + *.arcevocirqle.com.ng`
+    );
+  });
+}
 
 export default app;

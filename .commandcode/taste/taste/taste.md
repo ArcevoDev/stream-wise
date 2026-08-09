@@ -37,4 +37,5 @@
 - Prefers the hero/landing content to be short and scannable: stat cards in the hero carry only a compact teaser (stat + short label), and the long explanatory detail is moved into a dedicated section below the hero (e.g., a "Why StreamWise?" section answering the why question) rather than letting the hero say too much. Confidence: 0.7
 
 - Wants user-facing copy (landing/marketing prose, e.g., the "Why StreamWise?" section) to be grammatically correct and properly punctuated: fixes cover missing articles, subject-verb agreement, and consistent pronoun voice within a section (not mixing "you" into an otherwise third-person "students" argument); raw symbols and abbreviations in stats ("<30%", "1.8M+") are written out ("Less than 30%", "1.8 million+") because they read as rendering bugs and unpolished. Confidence: 0.7
+- Maintains a `todo.txt` file (at repo root) that tracks the current work plan plus findings, always overwriting it with the most recent analysis/todos and updated/checked off items so progress is recoverable in the event of an IDE crash mid-task. Confidence: 0.75
 

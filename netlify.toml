@@ -1,0 +1,36 @@
+# Netlify configuration — API-only deployment of the Express server.
+# The Vite client lives on Vercel (see vercel.json). This site ONLY hosts
+# the serverless API via Netlify Functions.
+
+[build]
+  # base omitted = repo root; pnpm workspace install + build run from here
+  command = "pnpm --filter server build"
+  # Minimal static placeholder so the root URL isn't a 404.
+  # All real traffic is /api/* → rewritten to the function below.
+  publish = "public"
+  functions = "server/functions"
+
+[build.environment]
+  # Prisma 7 requires Node >= 20.19; serverless-http v3 needs >= 18.
+  NODE_VERSION = "22"
+  # Match the pnpm major used locally (pnpm-workspace.yaml references pnpm 11).
+  PNPM_VERSION = "11"
+
+[functions]
+  # esbuild is Netlify's default bundler; explicit for clarity.
+  node_bundler = "esbuild"
+  # Prisma 7's generated client CANNOT be esbuild-bundled: it reads
+  # import.meta.url at module top-level (breaks when inlined) and
+  # dynamically imports 4.9MB query-compiler wasm-base64 modules at
+  # @prisma/client/runtime/*. Marking it external ships the package
+  # unmodified in the function zip so both resolve at runtime.
+  # (Known issue: github.com/prisma/prisma/issues/27324)
+  external_node_modules = ["@prisma/client"]
+
+# Rewrite /api/* to the Express-on-Netlify function (status 200 = rewrite,
+# keeps the URL so Express sees the full /api/... path).
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
