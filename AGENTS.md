@@ -122,9 +122,10 @@ rules:
   students with a prior recommendation land on `/history`, resume-step
   routing (`useResumeStep` + GET /auth/progress).
 - **Done (2026-08-09, deploy):** Netlify serverless deployment (see
-  `netlify.toml`, `server/functions/api.ts`, `serverless-http`), Vercel
-  client config (see `vercel.json`; note `rootDirectory` is set in the
-  dashboard, NOT in vercel.json), CORS for `*.vercel.app` / `*.netlify.app`
+  `netlify.toml`, `server/functions/api.cjs`, `serverless-http`), Vercel
+  client config (see `client/vercel.json`; note `rootDirectory` is set to
+  `client` in the dashboard, so Vercel reads the config from the client dir,
+  NOT the repo root), CORS for `*.vercel.app` / `*.netlify.app`
   / `*.arcevocirqle.com.ng`, listen guard, `.env.example` docs.
 - **Next:** profile editing (career aspiration, school) + per-page step
   guards (deep-linking to a later step : the server POSTs are the

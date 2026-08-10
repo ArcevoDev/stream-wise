@@ -169,14 +169,16 @@ derived `emotionalStabilityScore`.
 
 ## Deploy notes
 
-- **Client → Vercel** as a static SPA. `vercel.json` sets `buildCommand =
-  "pnpm build"` (tsc -b && vite build), `outputDirectory = "dist"`, the SPA
-  rewrite, and security headers. The Root Directory is **not** in vercel.json
-  : set it to `client` in the Vercel dashboard (Project → Settings → General).
+- **Client → Vercel** as a static SPA. `client/vercel.json` sets
+  `buildCommand = "pnpm build"` (tsc -b && vite build), `outputDirectory =
+  "dist"`, the SPA rewrite, and security headers. The Root Directory is set
+  to `client` in the Vercel dashboard (Project → Settings → General), so the
+  config file must live at `client/vercel.json` — a repo-root `vercel.json`
+  is ignored.
 - **Server → Netlify** as a serverless function. `netlify.toml` sets
   `build = "pnpm --filter server build"`, publish dir `public`, functions dir
   `server/functions`, and rewrites `/api/*` to the `api` function (wired via
-  `serverless-http`). `server/functions/api.ts` imports the compiled
+  `serverless-http`). `server/functions/api.cjs` imports the compiled
   `dist/src/app.js`.
 - Netlify env vars required: `DATABASE_URL`, `JWT_SECRET`, `CLIENT_URL`,
   `NODE_ENV=production`. Set `VITE_API_BASE_URL` in Vercel to the Netlify
