@@ -6,8 +6,7 @@ import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { ConsentPayload } from "@/types";
 import { ArrowRight, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Checkbox } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Checkbox, Alert, AlertDescription } from "@arcevo/facet-components";
 
 /**
  * P0-4a consent gate. A student with no "granted" consent record is routed
@@ -117,7 +116,7 @@ export default function Consent() {
   if (alreadyGranted) return null;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <ShieldCheck size={28} className="mx-auto text-primary mb-3" />

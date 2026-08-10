@@ -14,8 +14,9 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Alert,
+  AlertDescription,
 } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
 import type { UserRole } from "@/types";
 
 interface SubjectScore {

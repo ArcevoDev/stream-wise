@@ -5,6 +5,8 @@ import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import { Loader2, History as HistoryIcon, Trash2 } from "lucide-react";
 import {
+  Alert,
+  AlertDescription,
   Card,
   CardContent,
   CardHeader,
@@ -32,7 +34,6 @@ import {
   DialogDescription,
   DialogClose,
 } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
 import type { ClearHistoryResponse, RecommendationHistoryResponse, Stream } from "@/types/index";
 
 const STREAM_VARIANTS: Record<Stream, "default" | "secondary" | "success"> = {
@@ -102,7 +103,7 @@ export default function History() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-10">
+    <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8 sm:py-10">
       <div>
         <h1 className="text-2xl font-black text-foreground">Recommendation History</h1>
         <p className="text-sm text-muted-foreground">

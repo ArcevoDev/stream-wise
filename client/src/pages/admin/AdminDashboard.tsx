@@ -14,8 +14,7 @@ import {
   Sparkles,
   CircleCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Progress } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Card, CardContent, CardHeader, CardTitle, Progress, Alert, AlertDescription } from "@arcevo/facet-components";
 
 interface StatsResponse {
   stats: {

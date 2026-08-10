@@ -1,12 +1,11 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { Gender, ConsentPayload } from "@/types/index";
 import { User, Mail, Calendar, School, ArrowRight, AlertCircle, Loader2, BarChart3, ShieldCheck } from "lucide-react";
-import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
 import PasswordInput from "@/components/PasswordInput";
 
 interface RegisterForm {
@@ -50,7 +49,7 @@ export default function Register() {
     setError("");
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
@@ -97,7 +96,7 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-black text-foreground">Create Your Account</h1>

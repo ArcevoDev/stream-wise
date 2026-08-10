@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, type ChangeEvent, type SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api";
@@ -7,8 +7,7 @@ import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
 import { ClipboardList, ArrowRight, AlertCircle, BarChart3, Loader2 } from "lucide-react";
-import { Button, Input, Label, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Button, Input, Label, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
 import { Subject, AcademicLevel, AcademicStream } from "@/types";
 
 interface SubjectField {
@@ -131,7 +130,7 @@ export default function Scores() {
     setError("");
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
+  async function handleSubmit(e: SubmitEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     if (!currentStream) {
       setError("Please select your current academic stream.");
@@ -182,8 +181,8 @@ export default function Scores() {
     weightedNum >= 70 ? "text-success" : weightedNum >= 50 ? "text-warning" : "text-primary";
 
   return (
-    <div className="min-h-screen bg-background py-10 px-4">
-      <div className="max-w-xl mx-auto">
+    <div className="min-h-screen bg-background px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-xl">
         <ProgressBar
           step={1}
           total={4}

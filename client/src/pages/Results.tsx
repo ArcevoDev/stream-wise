@@ -14,8 +14,7 @@ import {
   Trophy, AlertTriangle, CheckCircle2, XCircle, Printer, RotateCcw,
   Loader2, Scale, ClipboardCheck, BarChart3, Info, History,
 } from "lucide-react";
-import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
 
 const STREAM_COLORS: Record<Stream, string> = {
   Science: "#3B82F6",
@@ -175,7 +174,7 @@ export default function Results() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-background py-10 px-4">
+    <div className="min-h-[calc(100vh-60px)] bg-background px-4 py-8 sm:py-10">
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center">

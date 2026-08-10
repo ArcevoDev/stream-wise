@@ -119,7 +119,7 @@ const STREAM_DESCRIPTIONS: Record<Stream, StreamDescription> = {
   Business: {
     subjects: "Economics, Commerce, and Accounting",
     careers: "Accounting, Business Administration, Banking & Finance, Marketing, Economics",
-    trait: "organised and enterprising",
+    trait: "organized and enterprising",
   },
 };
 

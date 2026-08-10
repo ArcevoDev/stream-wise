@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import { Loader2, ShieldCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Badge } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Alert, AlertDescription } from "@arcevo/facet-components";
 import type { AuditLogRow } from "@/types";
 
 interface AuditEntry {

@@ -28,12 +28,15 @@ const router = {
  * Responsive split:
  *  - Desktop (md+): brand + full action row (theme toggle, auth buttons,
  *    account avatar menu) inline.
- *  - Mobile (<md): brand + theme toggle + hamburger inline. The auth
- *    actions (login/signup, guest exit, dashboard, account links) live in
- *    the hamburger's stacked mobileMenu so nothing squeezes on a phone.
+ *  - Mobile (<md): brand + theme toggle + account avatar inline when
+ *    authenticated (the avatar menu already carries results/history/logout,
+ *    so a hamburger is redundant). Anonymous visitors and guest reviewers
+ *    get the hamburger instead: login/signup and guest actions are too
+ *    many to squeeze inline on a phone, so they live in the stacked
+ *    mobileMenu.
  */
 export default function SiteNav() {
-  const { token, role, student, logout } = useAuth();
+  const { token, role, logout } = useAuth();
   const navigate = useNavigate();
 
   function handleLogout(): void {
@@ -42,7 +45,9 @@ export default function SiteNav() {
   }
 
   const isStaff = token && role !== "STUDENT" && role !== "GUEST";
-  const isStudent = token && role === "STUDENT";
+  // Real authenticated users (not guests) get the avatar menu inline on every
+  // breakpoint; only they can skip the hamburger entirely.
+  const avatarOnMobile = token != null && role !== "GUEST";
 
   const brand = (
     <Link to="/" className="flex items-center gap-2.5 min-w-0" aria-label="StreamWise home">
@@ -56,9 +61,11 @@ export default function SiteNav() {
     </Link>
   );
 
-  // Desktop action row: the full set of auth controls.
+  // Desktop action row: the full set of auth controls. Must match the facet
+  // Navbar's hamburger breakpoint (md:hidden): the hamburger shows below md,
+  // so this row only appears from md up.
   const actions = (
-    <div className="hidden items-center gap-1.5 sm:flex md:gap-2">
+    <div className="hidden items-center gap-1.5 md:flex md:gap-2">
       <ThemeToggle />
       {token ? (
         <>
@@ -100,69 +107,43 @@ export default function SiteNav() {
     </div>
   );
 
-  // Mobile-only controls pinned inline next to the brand: theme toggle +
-  // hamburger (hamburger is rendered by the Navbar itself via mobileMenu).
-  const mobileActions = (
-    <div className="flex items-center gap-1 sm:hidden">
+  // Mobile controls. Authenticated users (real accounts, not guests) show
+  // the account avatar inline; the hamburger is then suppressed via
+  // showMobileMenu={false} because the avatar menu already covers
+  // results/history/dashboard/logout. Anonymous visitors and guests keep the
+  // hamburger with the stacked mobileMenu.
+  const mobileActions = avatarOnMobile ? (
+    <div className="flex items-center gap-1.5 md:hidden">
+      <ThemeToggle />
+      <AccountMenu />
+    </div>
+  ) : (
+    <div className="flex items-center gap-1 md:hidden">
       <ThemeToggle />
     </div>
   );
 
-  // Stacked mobile menu content: everything the desktop action row holds,
-  // re-expressed as full-width list items inside the hamburger.
+  // Stacked mobile menu content, shown inside the hamburger. Only reachable
+  // when the visitor is anonymous or a guest reviewer: real authenticated
+  // users get the avatar menu inline on every breakpoint instead.
   const mobileMenu = (
     <div className="flex flex-col gap-1">
-      {token ? (
+      {role === "GUEST" ? (
         <>
-          {isStaff && (
-            <FacetLink
-              href="/admin"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
-            >
-              <Icon name="dashboard" size={16} />
-              Dashboard
-            </FacetLink>
-          )}
-          {isStudent && (
-            <>
-              <FacetLink
-                href="/results"
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
-              >
-                <Icon name="check" size={16} />
-                My Results
-              </FacetLink>
-              <FacetLink
-                href="/history"
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
-              >
-                <Icon name="document" size={16} />
-                My History
-              </FacetLink>
-            </>
-          )}
-          {role === "GUEST" && (
-            <FacetLink
-              href="/register"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
-            >
-              <Icon name="arrowRight" size={16} />
-              Create account
-            </FacetLink>
-          )}
-          {student && (
-            <div className="px-3 pt-3 pb-1">
-              <p className="truncate text-sm font-semibold text-foreground">{student.fullName}</p>
-              <p className="truncate text-xs text-muted-foreground">{student.email}</p>
-            </div>
-          )}
+          <FacetLink
+            href="/register"
+            className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
+          >
+            <Icon name="arrowRight" size={16} />
+            Create account
+          </FacetLink>
           <button
             type="button"
             onClick={handleLogout}
             className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
           >
             <Icon name="logout" size={16} />
-            {role === "GUEST" ? "Exit guest session" : "Logout"}
+            Exit guest session
           </button>
         </>
       ) : (
@@ -198,7 +179,9 @@ export default function SiteNav() {
         </>
       }
       mobileMenu={mobileMenu}
-      showMobileMenu
+      // Authenticated users (real accounts) navigate with the inline avatar
+      // menu alone; the hamburger is only for anonymous visitors and guests.
+      showMobileMenu={!avatarOnMobile}
       router={router}
       onNavigate={(href) => navigate(href)}
     />

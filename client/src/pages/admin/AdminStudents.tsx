@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
@@ -15,8 +15,9 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  Alert,
+  AlertDescription,
 } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
 import type { UserRole } from "@/types";
 
 interface AdminStudentRow {
@@ -92,7 +93,7 @@ export default function AdminStudents() {
     };
   }, [page, search]);
 
-  function handleSearch(e: FormEvent<HTMLFormElement>): void {
+  function handleSearch(e: SubmitEvent<HTMLFormElement>): void {
     e.preventDefault();
     setSearchParams(searchInput ? { search: searchInput, page: "1" } : { page: "1" });
   }

@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription } from "@arcevo/facet-components";
 import {
   PieChart,
   Pie,

@@ -48,7 +48,7 @@ export const RIASEC_QUESTIONS: RiasecQuestion[] = [
   // ── SOCIAL (S) ──
   { id: 25, type: "S", text: "Teach or tutor others in subjects you understand well" },
   { id: 26, type: "S", text: "Counsel or support people going through difficulties" },
-  { id: 27, type: "S", text: "Organise community events or volunteer activities" },
+  { id: 27, type: "S", text: "Organize community events or volunteer activities" },
   { id: 28, type: "S", text: "Work as part of a team to achieve shared goals" },
   { id: 29, type: "S", text: "Listen carefully to others and offer thoughtful advice" },
   { id: 30, type: "S", text: "Advocate for fairness, rights, or social issues" },
@@ -66,14 +66,14 @@ export const RIASEC_QUESTIONS: RiasecQuestion[] = [
   { id: 40, type: "E", text: "Identify opportunities and take initiative to act on them" },
 
   // ── CONVENTIONAL (C) ──
-  { id: 41, type: "C", text: "Keep detailed and organised records or files" },
+  { id: 41, type: "C", text: "Keep detailed and organized records or files" },
   { id: 42, type: "C", text: "Follow established procedures and rules carefully" },
   { id: 43, type: "C", text: "Work with numbers, spreadsheets, or financial data" },
   { id: 44, type: "C", text: "Manage schedules, inventories, or administrative tasks" },
   { id: 45, type: "C", text: "Ensure accuracy and correctness in your work" },
   { id: 46, type: "C", text: "Work in a structured and predictable environment" },
   { id: 47, type: "C", text: "Process transactions, accounts, or official documents" },
-  { id: 48, type: "C", text: "Organise information systematically for easy retrieval" },
+  { id: 48, type: "C", text: "Organize information systematically for easy retrieval" },
 ];
 
 const TYPES: RiasecLetter[] = ["R", "I", "A", "S", "E", "C"];

@@ -31,12 +31,12 @@ export const BFI_QUESTIONS: BfiQuestion[] = [
 
   // ── CONSCIENTIOUSNESS (C) ──
   { id: 5, trait: "C", text: "I complete tasks thoroughly and on time", reverseKeyed: false },
-  { id: 6, trait: "C", text: "I keep my belongings and schedule well organised", reverseKeyed: false },
+  { id: 6, trait: "C", text: "I keep my belongings and schedule well organized", reverseKeyed: false },
   { id: 7, trait: "C", text: "I often leave tasks unfinished or do them at the last minute", reverseKeyed: true },
   { id: 8, trait: "C", text: "I set goals for myself and work steadily toward them", reverseKeyed: false },
 
   // ── EXTRAVERSION (E) ──
-  { id: 9, trait: "E", text: "I feel energised when I am around other people", reverseKeyed: false },
+  { id: 9, trait: "E", text: "I feel energized when I am around other people", reverseKeyed: false },
   { id: 10, trait: "E", text: "I am talkative and enjoy starting conversations", reverseKeyed: false },
   { id: 11, trait: "E", text: "I prefer working or spending time alone rather than in groups", reverseKeyed: true },
   { id: 12, trait: "E", text: "I am comfortable being the centre of attention", reverseKeyed: false },

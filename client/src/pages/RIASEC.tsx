@@ -8,8 +8,7 @@ import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
 import type { RiasecLetter, RiasecQuestion } from "@/types/index";
 import { Brain, ChevronRight, ChevronLeft, Loader2, AlertCircle, ArrowRight } from "lucide-react";
-import { Button, Card, CardContent } from "@arcevo/facet-components";
-import { Alert, AlertDescription } from "@/components/Alert";
+import { Button, Card, CardContent, Alert, AlertDescription } from "@arcevo/facet-components";
 
 interface LikertOption {
   value: number;
@@ -151,8 +150,8 @@ export default function RIASEC() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-2xl">
         <ProgressBar
           step={2}
           total={4}
@@ -176,7 +175,7 @@ export default function RIASEC() {
           Section {page + 1} of 6 · {TYPE_NAMES[currentType]} ({answered}/{pageQuestions.length} answered)
         </p>
 
-        <div className="mt-6">
+        <div className="mt-8">
           <Card variant="glass" className="rounded-2xl border-border/60">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-5">

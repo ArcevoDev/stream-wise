@@ -17,13 +17,18 @@
   PNPM_VERSION = "11"
 
 [functions]
-  # nft (node-file-trace) ships the full module graph unmodified instead of
-  # esbuild-inlining it. Prisma 7's generated client reads import.meta.url
-  # at module top-level (breaks when esbuild inlines it into a CJS bundle,
-  # crashing the function at load time with "path argument must be a string")
-  # and dynamically imports wasm-base64 query-compiler modules. nft keeps
-  # everything external so both resolve at runtime.
+  # nft (node-file-trace) keeps the Prisma 7 generated client external
+  # instead of esbuild-inlining it. Inlining turns the client's top-level
+  # import.meta.url into undefined (crash at load time) and breaks its
+  # dynamic wasm-base64 query-compiler imports.
   # (Known issue: github.com/prisma/prisma/issues/27324)
+  #
+  # The function ENTRY is server/functions/api.mjs (plain ESM). The server
+  # workspace is "type": "module" and the compiled app (dist/src/app.js) is
+  # ESM, so a CommonJS wrapper would crash with "Cannot require() ES Module
+  # in a cycle". The .mjs extension is unambiguous ESM and the wrapper loads
+  # server/.env explicitly (netlify dev runs functions from the repo root,
+  # where dotenv/config would not find server/.env on its own).
   node_bundler = "nft"
 
 # Rewrite /api/* to the Express-on-Netlify function (status 200 = rewrite,
