@@ -3,7 +3,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { useAuth } from "./context/AuthContext";
 import { useResumeStep } from "./hooks/useResumeStep";
 import SiteNav from "./components/SiteNav";
-import ConsentLanding from "./pages/ConsentLanding";
+import LandingPage from "./pages/LandingPage";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Consent from "./pages/Consent";
@@ -84,7 +84,7 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           {/* Consent-first landing: `/` is the informed-consent gate. */}
-          <Route path="/" element={<ConsentLanding />} />
+          <Route path="/" element={<LandingPage />} />
           <Route
             path="/register"
             element={

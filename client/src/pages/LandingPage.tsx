@@ -26,8 +26,7 @@ import type { AssessmentStep } from "@/types";
  * An already-consented, logged-in student is sent straight into the
  * assessment flow instead of seeing this page.
  */
-
-export default function ConsentLanding() {
+export default function LandingPage() {
   const { token, role, consentRequired, login, guestLogin, refreshIdentity } = useAuth();
   const navigate = useNavigate();
   // For a logged-in student: the furthest step they've completed. Used by the
