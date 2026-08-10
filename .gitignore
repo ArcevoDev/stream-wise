@@ -12,6 +12,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# Netlify local function bundling artifacts (repro zips)
+.netlify/
+
 # Prisma
 server/prisma/generated/
 *.db

@@ -41,6 +41,48 @@ const TARGET_DIR = "dist/prisma/generated";
 // so the trailing ".ts" can be swapped for ".js" while preserving everything else.
 const TS_IMPORT_RE = /((?:from|import)\s+['"])(\.\.?\/[^'"]+)\.ts(['"])/g;
 
+// ============================================================================
+// FIX (Bug): Netlify nft bundler inlines prisma/generated/client.js into a
+// CJS bundle where the ESM-only `import.meta.url` becomes `undefined`, and
+// the function crashes at load time ("path argument must be of type string").
+// Rewrite the top-level `__dirname` derivation to fall back to the Node CJS
+// `__dirname` when `import.meta.url` is unavailable. Idempotent: skips files
+// that no longer contain the problematic expression.
+// ============================================================================
+const META_URL_IMPORT_RE = /import \* as path from 'node:path';\nimport \{ fileURLToPath \} from 'node:url';\n/;
+const META_URL_LINE_RE = /globalThis\['__dirname'\] = path\.dirname\(fileURLToPath\(import\.meta\.url\)\);\n?/;
+
+function rewriteClientDirname(filePath) {
+  const original = readFileSync(filePath, "utf8");
+  if (!META_URL_LINE_RE.test(original)) {
+    return false; // already patched (or not a generated client entry)
+  }
+
+  let rewritten = original;
+  if (META_URL_IMPORT_RE.test(rewritten)) {
+    rewritten = rewritten.replace(
+      META_URL_IMPORT_RE,
+      "import * as path from 'node:path';\nimport { fileURLToPath } from 'node:url';\nimport * as nodeProcess from 'node:process';\n"
+    );
+  }
+  rewritten = rewritten.replace(
+    META_URL_LINE_RE,
+    "// FIX (Bug): Netlify's nft bundler inlines this client into a CJS bundle,\n" +
+      "// where the ESM-only import.meta.url becomes undefined and the function\n" +
+      "// crashes at load time. Use the CJS __dirname when available, else derive\n" +
+      "// the client dir from import.meta.url (real ESM runtime).\n" +
+      "globalThis['__dirname'] = typeof nodeProcess['env'] !== 'undefined' && typeof __dirname !== 'undefined'\n" +
+      "  ? __dirname\n" +
+      "  : path.dirname(fileURLToPath(import.meta.url));\n"
+  );
+
+  if (rewritten !== original) {
+    writeFileSync(filePath, rewritten, "utf8");
+    return true;
+  }
+  return false;
+}
+
 function rewriteFile(filePath) {
   const original = readFileSync(filePath, "utf8");
   const rewritten = original.replace(TS_IMPORT_RE, (_match, prefix, importPath, suffix) => {
@@ -63,6 +105,10 @@ function walk(dir, stats) {
       walk(fullPath, stats);
     } else if (fullPath.endsWith(".js")) {
       stats.scanned += 1;
+      if (fullPath.endsWith("client.js") && rewriteClientDirname(fullPath)) {
+        stats.rewritten += 1;
+        stats.files.push(fullPath);
+      }
       if (rewriteFile(fullPath)) {
         stats.rewritten += 1;
         stats.files.push(fullPath);
@@ -100,6 +146,18 @@ function main() {
         `lines like: import * as $Class from "./internal/class.ts"`
     );
   }
+
+  // FIX (Bug): confirm the client __dirname patch is in place after any
+  // rewrite, so the Netlify nft bundle never ships an undefined import.meta.url.
+  const patched = readFileSync(join(TARGET_DIR, "client.js"), "utf8");
+  if (!patched.includes("typeof __dirname !== 'undefined'")) {
+    console.error(
+      `[fix-prisma-imports] FATAL: ${TARGET_DIR}/client.js was not patched for the ` +
+        `import.meta.url crash. The Netlify function will fail to load.`
+    );
+    process.exit(1);
+  }
+  console.log(`[fix-prisma-imports] client.js __dirname patch verified ✓`);
 }
 
 main();
