@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Loader2, History as HistoryIcon, Trash2 } from "lucide-react";
 import {
   Alert,
   AlertDescription,
@@ -120,14 +119,14 @@ export default function History() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <HistoryIcon size={14} />
+            <Icon name="clipboard-list" size={14} />
             Past recommendations
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Loader2 size={20} className="animate-spin mr-2" />
+              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading history…
             </div>
           ) : !data || data.history.length === 0 ? (
@@ -213,7 +212,7 @@ export default function History() {
                 disabled={clearing}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 size={14} />
+                <Icon name="trash" size={14} />
                 Clear history
               </Button>
             </DialogTrigger>
@@ -238,7 +237,7 @@ export default function History() {
                   </Button>
                 </DialogClose>
                 <Button variant="destructive" disabled={clearing} onClick={handleClearHistory}>
-                  {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {clearing ? <Icon name="loader-circle" size={14} className="animate-spin" /> : <Icon name="trash" size={14} />}
                   Clear history
                 </Button>
               </DialogFooter>

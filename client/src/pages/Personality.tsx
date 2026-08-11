@@ -7,8 +7,7 @@ import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
 import type { BfiQuestion, BfiTrait } from "@/types/index";
-import { Smile, Loader2, AlertCircle, ArrowRight } from "lucide-react";
-import { Button, Card, CardContent, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Button, Card, CardContent, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
 
 interface LikertOption {
   value: number;
@@ -106,7 +105,7 @@ export default function Personality() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={36} className="text-primary animate-spin mx-auto mb-3" />
+          <Icon name="loader-circle" size={36} className="text-primary animate-spin mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">Loading assessment questions…</p>
         </div>
       </div>
@@ -133,7 +132,7 @@ export default function Personality() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-6">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
-                  <Smile size={14} />
+                  <Icon name="face-slightly-smiling" size={14} />
                 </span>
                 <div>
                   <h2 className="font-black text-foreground text-lg">
@@ -205,7 +204,7 @@ export default function Personality() {
 
               {error && (
                 <Alert variant="destructive" className="mt-6">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -218,13 +217,13 @@ export default function Personality() {
               >
                 {loading ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
+                    <Icon name="loader-circle" size={14} className="animate-spin" />
                     Calculating…
                   </>
                 ) : (
                   <>
                     Submit & See My Results
-                    <ArrowRight size={15} />
+                    <Icon name="arrow-right" size={15} />
                   </>
                 )}
               </Button>

@@ -7,8 +7,7 @@ import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
 import type { RiasecLetter, RiasecQuestion } from "@/types/index";
-import { Brain, ChevronRight, ChevronLeft, Loader2, AlertCircle, ArrowRight } from "lucide-react";
-import { Button, Card, CardContent, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Button, Card, CardContent, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
 
 interface LikertOption {
   value: number;
@@ -142,7 +141,7 @@ export default function RIASEC() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <Loader2 size={36} className="text-primary animate-spin mx-auto mb-3" />
+          <Icon name="loader-circle" size={36} className="text-primary animate-spin mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">Loading assessment questions…</p>
         </div>
       </div>
@@ -180,7 +179,7 @@ export default function RIASEC() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-5">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
-                  <Brain size={14} />
+                  <Icon name="brain" size={14} />
                 </span>
                 <div>
                   <h2 className="font-black text-foreground text-lg">Vocational Interest Assessment</h2>
@@ -237,7 +236,7 @@ export default function RIASEC() {
 
               {error && (
                 <Alert variant="destructive" className="mt-4">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -253,14 +252,14 @@ export default function RIASEC() {
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                   >
-                    <ChevronLeft size={15} />
+                    <Icon name="chevron-left" size={15} />
                     Previous
                   </Button>
                 )}
                 {page < 5 ? (
                   <Button type="button" className="flex-1" onClick={handleNext}>
                     Next Section
-                    <ChevronRight size={15} />
+                    <Icon name="chevron-right" size={15} />
                   </Button>
                 ) : (
                   <Button
@@ -271,13 +270,13 @@ export default function RIASEC() {
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={14} className="animate-spin" />
+                        <Icon name="loader-circle" size={14} className="animate-spin" />
                         Analysing…
                       </>
                     ) : (
                       <>
                         Submit & Continue
-                        <ArrowRight size={15} />
+                        <Icon name="arrow-right" size={15} />
                       </>
                     )}
                   </Button>

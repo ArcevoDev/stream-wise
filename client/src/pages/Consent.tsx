@@ -5,8 +5,7 @@ import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { ConsentPayload } from "@/types";
-import { ArrowRight, AlertCircle, Loader2, ShieldCheck } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Checkbox, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Checkbox, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
 
 /**
  * P0-4a consent gate. A student with no "granted" consent record is routed
@@ -108,7 +107,7 @@ export default function Consent() {
   if (checking) {
     return (
       <div className="min-h-[calc(100vh-56px)] flex items-center justify-center">
-        <Loader2 size={20} className="animate-spin text-muted-foreground" />
+        <Icon name="loader-circle" size={20} className="animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -119,7 +118,7 @@ export default function Consent() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <ShieldCheck size={28} className="mx-auto text-primary mb-3" />
+          <Icon name="shield-check" size={28} className="mx-auto text-primary mb-3" />
           <h1 className="text-2xl font-black text-foreground">Informed Consent</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Before you begin the assessment, please read and agree to the following.
@@ -156,7 +155,7 @@ export default function Consent() {
 
               {error && (
                 <Alert variant="destructive">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -168,13 +167,13 @@ export default function Consent() {
               >
                 {saving ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
+                    <Icon name="loader-circle" size={14} className="animate-spin" />
                     Saving…
                   </>
                 ) : (
                   <>
                     I Agree & Continue
-                    <ArrowRight size={15} />
+                    <Icon name="arrow-right" size={15} />
                   </>
                 )}
               </Button>

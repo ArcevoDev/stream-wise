@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Loader2, ShieldCheck } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Badge, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Icon, Card, CardContent, CardHeader, CardTitle, Badge, Alert, AlertDescription } from "@arcevo/facet-components";
 import type { AuditLogRow } from "@/types";
 
 interface AuditEntry {
@@ -67,14 +66,14 @@ export default function AdminAudit() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <ShieldCheck size={14} />
+            <Icon name="shield-check" size={14} />
             Recent events
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Loader2 size={20} className="animate-spin mr-2" />
+              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading audit trail…
             </div>
           ) : logs.length === 0 ? (

@@ -1,8 +1,8 @@
-import { FlaskConical, BookOpen, TrendingUp, Star, type LucideIcon } from "lucide-react";
+import { Icon, type IconName } from "@arcevo/facet-components";
 import type { Stream } from "@/types/index.js";
 
 interface StreamMeta {
-  Icon: LucideIcon;
+  Icon: IconName;
   subjects: string;
   /** Theme-aware container: token + alpha, works in light and dark. */
   bg: string;
@@ -17,7 +17,7 @@ interface StreamMeta {
 // read correctly on both light and dark backgrounds.
 const STREAM_META: Record<Stream, StreamMeta> = {
   Science: {
-    Icon: FlaskConical,
+    Icon: "flask-conical",
     subjects: "Biology · Chemistry · Physics",
     bg: "bg-science/10 border-science/40",
     badge: "bg-science/15 text-science",
@@ -26,7 +26,7 @@ const STREAM_META: Record<Stream, StreamMeta> = {
     iconColor: "text-science",
   },
   Humanities: {
-    Icon: BookOpen,
+    Icon: "book-open",
     subjects: "Literature · Government · History",
     bg: "bg-humanities/10 border-humanities/40",
     badge: "bg-humanities/15 text-humanities",
@@ -35,7 +35,7 @@ const STREAM_META: Record<Stream, StreamMeta> = {
     iconColor: "text-humanities",
   },
   Business: {
-    Icon: TrendingUp,
+    Icon: "trending-up",
     subjects: "Economics · Commerce · Accounting",
     bg: "bg-business/10 border-business/40",
     badge: "bg-business/15 text-business",
@@ -58,7 +58,7 @@ export default function StreamCard({ stream, score, rank, maxScore }: StreamCard
   // Tailwind JIT safelist risk flagged in the roadmap.
   const pct = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
   const isTop = rank === 1;
-  const { Icon } = meta;
+  const iconName = meta.Icon;
 
   return (
     <div
@@ -70,14 +70,14 @@ export default function StreamCard({ stream, score, rank, maxScore }: StreamCard
         <span
           className={`absolute -top-3 left-4 inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${meta.badge}`}
         >
-          <Star size={10} className="fill-current" />
+          <Icon name="star" size={10} className="fill-current" />
           Top Recommendation
         </span>
       )}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${meta.iconBg}`}>
-            <Icon size={18} className={meta.iconColor} />
+            <Icon name={iconName} size={18} className={meta.iconColor} />
           </span>
           <div className="min-w-0">
             <p className="font-bold text-foreground truncate">{stream} Stream</p>

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { ArrowLeft, Loader2, ShieldCheck, User, GraduationCap, ClipboardList } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,6 +15,7 @@ import {
   TabsContent,
   Alert,
   AlertDescription,
+  Icon,
 } from "@arcevo/facet-components";
 import type { UserRole } from "@/types";
 
@@ -163,7 +163,7 @@ export default function AdminStudentDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin mr-2" />
+        <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
         Loading student record…
       </div>
     );
@@ -184,7 +184,7 @@ export default function AdminStudentDetail() {
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to="/admin/students">
-          <ArrowLeft size={14} />
+          <Icon name="arrow-left" size={14} />
           Back to students
         </Link>
       </Button>
@@ -243,7 +243,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <User size={14} />
+                  <Icon name="user" size={14} />
                   Academic Profile
                 </CardTitle>
               </CardHeader>
@@ -280,7 +280,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <ClipboardList size={14} />
+                  <Icon name="clipboard-list" size={14} />
                   RIASEC
                 </CardTitle>
               </CardHeader>
@@ -309,7 +309,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <GraduationCap size={14} />
+                  <Icon name="graduation-cap" size={14} />
                   Personality (BFI)
                 </CardTitle>
               </CardHeader>
@@ -457,7 +457,7 @@ export default function AdminStudentDetail() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <ShieldCheck size={14} />
+                <Icon name="shield-check" size={14} />
                 Audit Trail
               </CardTitle>
             </CardHeader>

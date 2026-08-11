@@ -3,18 +3,9 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import {
-  Users,
-  GraduationCap,
-  ShieldCheck,
-  BookOpen,
-  Loader2,
-  ArrowRight,
-  UserPlus,
-  ClipboardList,
-  Sparkles,
-  CircleCheck,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Progress, Alert, AlertDescription } from "@arcevo/facet-components";
+  Card, CardContent, CardHeader, CardTitle, Progress, Alert, AlertDescription, Icon,
+  type IconName,
+} from "@arcevo/facet-components";
 
 interface StatsResponse {
   stats: {
@@ -32,12 +23,12 @@ interface StatsResponse {
   };
 }
 
-const FUNNEL_STEPS: { key: keyof StatsResponse["stats"]["funnel"]; label: string; icon: typeof Users }[] = [
-  { key: "registered", label: "Registered", icon: UserPlus },
-  { key: "scores", label: "Scores Entered", icon: ClipboardList },
-  { key: "riasec", label: "RIASEC Done", icon: Sparkles },
-  { key: "bfi", label: "BFI Done", icon: CircleCheck },
-  { key: "recommended", label: "Recommended", icon: GraduationCap },
+const FUNNEL_STEPS: { key: keyof StatsResponse["stats"]["funnel"]; label: string; icon: IconName }[] = [
+  { key: "registered", label: "Registered", icon: "user-plus" },
+  { key: "scores", label: "Scores Entered", icon: "clipboard-list" },
+  { key: "riasec", label: "RIASEC Done", icon: "sparkles" },
+  { key: "bfi", label: "BFI Done", icon: "circle-check" },
+  { key: "recommended", label: "Recommended", icon: "graduation-cap" },
 ];
 
 export default function AdminDashboard() {
@@ -65,7 +56,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin mr-2" />
+        <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
         Loading dashboard…
       </div>
     );
@@ -81,10 +72,10 @@ export default function AdminDashboard() {
 
   const { stats } = data;
   const kpis = [
-    { label: "Total Students", value: stats.totalStudents, icon: Users },
-    { label: "Recommendations", value: stats.totalRecommendations, icon: GraduationCap },
-    { label: "JAMB Validations", value: stats.totalJambValidations, icon: ShieldCheck },
-    { label: "JAMB Courses", value: stats.totalCourses, icon: BookOpen },
+    { label: "Total Students", value: stats.totalStudents, icon: "users" },
+    { label: "Recommendations", value: stats.totalRecommendations, icon: "graduation-cap" },
+    { label: "JAMB Validations", value: stats.totalJambValidations, icon: "shield-check" },
+    { label: "JAMB Courses", value: stats.totalCourses, icon: "book-open" },
   ];
 
   return (
@@ -103,7 +94,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <kpi.icon size={18} />
+                  <Icon name={kpi.icon} size={18} />
                 </span>
                 <div>
                   <p className="text-2xl font-black text-foreground">{kpi.value}</p>
@@ -131,7 +122,7 @@ export default function AdminDashboard() {
               <div key={step.key} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 font-medium text-foreground">
-                    <step.icon size={14} className="text-muted-foreground" />
+                    <Icon name={step.icon} size={14} className="text-muted-foreground" />
                     {step.label}
                   </span>
                   <span className="text-muted-foreground">
@@ -140,7 +131,7 @@ export default function AdminDashboard() {
                 </div>
                 <Progress value={pct} />
                 {i < FUNNEL_STEPS.length - 1 && (
-                  <ArrowRight size={12} className="mx-auto text-muted-foreground/40" />
+                  <Icon name="arrow-right" size={12} className="mx-auto text-muted-foreground/40" />
                 )}
               </div>
             );
@@ -164,7 +155,7 @@ export default function AdminDashboard() {
                 className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 Browse
-                <ArrowRight size={14} />
+                <Icon name="arrow-right" size={14} />
               </Link>
             </div>
           </CardContent>
@@ -183,7 +174,7 @@ export default function AdminDashboard() {
                 className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 View charts
-                <ArrowRight size={14} />
+                <Icon name="arrow-right" size={14} />
               </Link>
             </div>
           </CardContent>

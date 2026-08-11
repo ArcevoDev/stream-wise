@@ -2,22 +2,14 @@ import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
-import {
-  LayoutDashboard,
-  Users,
-  BarChart3,
-  ScrollText,
-  Download,
-  LogOut,
-} from "lucide-react";
-import { Button } from "@arcevo/facet-components";
+import { Button, Icon } from "@arcevo/facet-components";
 import { api } from "@/api";
 
 const NAV_ITEMS = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/students", label: "Students", icon: Users, end: false },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, end: false },
-  { to: "/admin/audit", label: "Audit Trail", icon: ScrollText, end: false },
+  { to: "/admin", label: "Dashboard", icon: "layout-dashboard", end: true },
+  { to: "/admin/students", label: "Students", icon: "users", end: false },
+  { to: "/admin/analytics", label: "Analytics", icon: "chart-column", end: false },
+  { to: "/admin/audit", label: "Audit Trail", icon: "scroll-text", end: false },
 ];
 
 export default function AdminLayout() {
@@ -87,7 +79,7 @@ export default function AdminLayout() {
                 }`
               }
             >
-              <item.icon size={16} />
+              <Icon name={item.icon} size={16} />
               {item.label}
             </NavLink>
           ))}
@@ -98,7 +90,7 @@ export default function AdminLayout() {
               className="w-full justify-start gap-2.5 mt-4"
               onClick={handleExport}
             >
-              <Download size={16} />
+              <Icon name="download" size={16} />
               Export CSV
             </Button>
           )}
@@ -114,7 +106,7 @@ export default function AdminLayout() {
             </div>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
-              <LogOut size={16} />
+              <Icon name="log-out" size={16} />
             </Button>
           </div>
         </div>
@@ -138,7 +130,7 @@ export default function AdminLayout() {
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
-            <LogOut size={16} />
+            <Icon name="log-out" size={16} />
           </Button>
         </div>
       </div>
@@ -157,7 +149,7 @@ export default function AdminLayout() {
                 }`
               }
             >
-              <item.icon size={18} />
+              <Icon name={item.icon} size={18} />
               {item.label}
             </NavLink>
           ))}

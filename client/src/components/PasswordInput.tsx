@@ -1,6 +1,5 @@
 import { useState, type InputHTMLAttributes } from "react";
-import { Eye, EyeOff, Lock } from "lucide-react";
-import { Input } from "@arcevo/facet-components";
+import { Icon, Input } from "@arcevo/facet-components";
 
 /**
  * Password field with a show/hide toggle (eye icon). Left icon mirrors the
@@ -14,7 +13,8 @@ export default function PasswordInput({
 
   return (
     <div className="relative">
-      <Lock
+      <Icon
+        name="lock"
         size={15}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
       />
@@ -30,7 +30,7 @@ export default function PasswordInput({
         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setVisible((v) => !v)}
       >
-        {visible ? <EyeOff size={15} /> : <Eye size={15} />}
+        {visible ? <Icon name="eye-off" size={15} /> : <Icon name="eye" size={15} />}
       </button>
     </div>
   );

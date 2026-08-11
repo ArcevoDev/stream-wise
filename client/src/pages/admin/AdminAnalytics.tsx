@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Icon, Card, CardContent, CardHeader, CardTitle, Alert, AlertDescription } from "@arcevo/facet-components";
 import {
   PieChart,
   Pie,
@@ -72,7 +71,7 @@ export default function AdminAnalytics() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin mr-2" />
+        <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
         Loading analytics…
       </div>
     );

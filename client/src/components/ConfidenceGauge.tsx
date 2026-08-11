@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
+import { Icon, type IconName } from "@arcevo/facet-components";
 
 interface ConfidenceGaugeProps {
   value: number;
@@ -35,7 +35,7 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
       : clamped < 80
         ? "Your profile leans meaningfully toward this stream, with some overlap."
         : "Your profile clearly favours this stream.";
-  const Icon = isStrong ? TrendingUp : isClear ? Minus : TrendingDown;
+  const iconName: IconName = isStrong ? "trending-up" : isClear ? "minus" : "trending-down";
 
   // SVG arc gauge. Half-circle
   const r = 54;
@@ -89,11 +89,11 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
         </text>
       </svg>
       <span className={`inline-flex items-center gap-1.5 text-sm font-bold ${color}`}>
-        <Icon size={14} />
+        <Icon name={iconName} size={14} />
         {label}
       </span>
       <p className="mt-2 flex items-start gap-1.5 text-center text-[11px] leading-relaxed text-muted-foreground">
-        <Info size={12} className="mt-0.5 shrink-0" />
+        <Icon name="info" size={12} className="mt-0.5 shrink-0" />
         {hint}
       </p>
       <p className="mt-1 text-[10px] text-muted-foreground/60">

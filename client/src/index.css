@@ -1,13 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ── Tailwind v4 (Rust parser, CSS-native config) ──────────── */
+@import "tailwindcss";
 
-/*
- * Facet design tokens live in @arcevo/facet-tokens/tokens.css and are imported
- * from main.tsx (before this file) so Vite bundles them first. They define
- * --background, --primary, --border, etc. (OKLCH) plus [data-theme="light"]
- * overrides, .glass, .glow-indigo, and .text-gradient helpers.
- */
+/* ── facet design tokens (OKLCH CSS custom properties) ─────── */
+@import "@arcevo/facet-tokens/tokens.css";
+
+/* ── Tailwind v4 theme extension (maps CSS vars → utilities) ─ */
+@import "@arcevo/facet-tokens/tailwind.css";
+
+/* ── StreamWise theme (fonts, stream colours, scanner hints) ─ */
+@import "./tailwind.css";
 
 @layer base {
   * {
@@ -23,7 +24,7 @@
   }
 }
 
-/* ── Overlays above the floating SiteNav (z-[100]) ───────────────────────── */
+/* ── Overlays above the floating SiteNav (z-[100]) ───────────────────── */
 /* The facet Dialog overlay/content render at z-50, which the pill topbar
    (z-[100]) would otherwise float above, staying visible behind the modal.
    The overlay is a Radix portal (teleported to <body>), so it is bumped
@@ -33,7 +34,7 @@
   z-index: 120;
 }
 
-/* ── Print styles ─────────────────────────────────────────────────────────── */
+/* ── Print styles ─────────────────────────────────────────────────────── */
 @media print {
   nav,
   .no-print {

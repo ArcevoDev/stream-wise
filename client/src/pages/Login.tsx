@@ -3,8 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Mail, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
-import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Alert, AlertDescription } from "@arcevo/facet-components";
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
 import PasswordInput from "@/components/PasswordInput";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { STEP_TO_ROUTE } from "@/hooks/useResumeStep";
@@ -82,7 +81,8 @@ export default function Login() {
               <div>
                 <Label htmlFor="email">Email Address</Label>
                 <div className="relative">
-                  <Mail
+                  <Icon
+                    name="mail"
                     size={15}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
                   />
@@ -115,7 +115,7 @@ export default function Login() {
 
               {error && (
                 <Alert variant="destructive">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -123,13 +123,13 @@ export default function Login() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
+                    <Icon name="loader-circle" size={14} className="animate-spin" />
                     Logging in…
                   </>
                 ) : (
                   <>
                     Log In
-                    <ArrowRight size={15} />
+                    <Icon name="arrow-right" size={15} />
                   </>
                 )}
               </Button>

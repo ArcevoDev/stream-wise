@@ -1,0 +1,28 @@
+@source "../../node_modules/@arcevo/facet-components/dist";
+@source "../../node_modules/@arcevo/facet-layout/dist";
+
+/* =================================================================
+ * StreamWise: Tailwind v4 theme extension
+ *
+ * Facet design tokens (@arcevo/facet-tokens/tokens.css) are OKLCH CSS
+ * custom properties; the facet tokens tailwind.css already maps them
+ * into Tailwind v4 theme variables (--color-primary, --radius-*, ...).
+ * This file adds the StreamWise-specific theme on top:
+ *   • Poppins-first font stack (the v3 tailwind.config default)
+ *   • stable hex stream colours for charts / badges
+ *   • the Tailwind source scanner hints for facet's published dist
+ * ================================================================= */
+
+@theme {
+  --font-sans: "Poppins", "Inter", "system-ui", sans-serif;
+
+  /* Stream colours for the recommendation / admin dashboards:
+     stable hexes so charts stay consistent across themes. */
+  --color-science: #3b82f6;
+  --color-humanities: #8b5cf6;
+  --color-business: #10b981;
+}
+
+/* Tailwind v4 auto-detects ./src/**/*.tsx, but the facet components and
+   layout ship precompiled class strings in their dist: the at-source
+   scanner hints at the top of this file make Tailwind crawl them. */

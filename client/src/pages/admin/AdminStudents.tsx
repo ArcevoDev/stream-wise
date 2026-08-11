@@ -2,7 +2,6 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Search, Loader2, ChevronLeft, ChevronRight, Users, ShieldCheck } from "lucide-react";
 import {
   Button,
   Input,
@@ -17,6 +16,7 @@ import {
   TableCell,
   Alert,
   AlertDescription,
+  Icon,
 } from "@arcevo/facet-components";
 import type { UserRole } from "@/types";
 
@@ -115,7 +115,7 @@ export default function AdminStudents() {
         </div>
         <form onSubmit={handleSearch} className="flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9 w-full sm:w-56"
               placeholder="Search name or email…"
@@ -139,12 +139,12 @@ export default function AdminStudents() {
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Loader2 size={20} className="animate-spin mr-2" />
+              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading students…
             </div>
           ) : !data || data.students.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-              <Users size={28} className="text-muted-foreground/50" />
+              <Icon name="users" size={28} className="text-muted-foreground/50" />
               <p className="text-sm">No students match your filters.</p>
             </div>
           ) : (
@@ -186,7 +186,7 @@ export default function AdminStudents() {
                           <TableCell>
                             <span className="flex items-center gap-1.5">
                               {s.hasRecommendation ? (
-                                <ShieldCheck size={14} className="text-success" />
+                                <Icon name="shield-check" size={14} className="text-success" />
                               ) : (
                                 <span className="inline-block h-2 w-2 rounded-full bg-muted" />
                               )}
@@ -214,7 +214,7 @@ export default function AdminStudents() {
                       disabled={data.pagination.page <= 1}
                       onClick={() => goToPage(data.pagination.page - 1)}
                     >
-                      <ChevronLeft size={14} />
+                      <Icon name="chevron-left" size={14} />
                       Prev
                     </Button>
                     <Button
@@ -224,7 +224,7 @@ export default function AdminStudents() {
                       onClick={() => goToPage(data.pagination.page + 1)}
                     >
                       Next
-                      <ChevronRight size={14} />
+                      <Icon name="chevron-right" size={14} />
                     </Button>
                   </div>
                 </div>

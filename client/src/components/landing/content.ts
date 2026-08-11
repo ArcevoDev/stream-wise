@@ -1,8 +1,7 @@
-import { GraduationCap, Brain, Target, Users, HeartHandshake, BookOpen } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { IconName } from "@arcevo/facet-components";
 
 export interface FeatureItem {
-  icon: LucideIcon;
+  icon: IconName;
   title: string;
   text: string;
 }
@@ -14,7 +13,7 @@ export interface StepItem {
 }
 
 export interface WhyPoint {
-  icon: LucideIcon;
+  icon: IconName;
   stat: string;
   title: string;
   text: string;
@@ -23,17 +22,17 @@ export interface WhyPoint {
 
 export const FEATURES: FeatureItem[] = [
   {
-    icon: GraduationCap,
+    icon: "graduation-cap",
     title: "Personalised stream match",
     text: "Science, Humanities, or Business, recommended from your real academic scores, not guesswork.",
   },
   {
-    icon: Brain,
+    icon: "brain",
     title: "Two research-backed quizzes",
     text: "A 48-item vocational interest (RIASEC) quiz and a 20-item personality (BFI) questionnaire.",
   },
   {
-    icon: Target,
+    icon: "target",
     title: "JAMB subject check",
     text: "Validate your O'Level subjects against real university course requirements before you apply.",
   },
@@ -51,21 +50,21 @@ export const STEPS: StepItem[] = [
  *  kept together here so a visitor gets the full context behind the engine. */
 export const WHY_POINTS: WhyPoint[] = [
   {
-    icon: Users,
+    icon: "users",
     stat: "76%",
     title: "of 1.8 million+ candidates scored below 200 in the 2024 UTME",
     text: "Subject choices made at age 14 or 15 decide which university courses students can apply for years later. A wrong combination disqualifies them, no matter how high they score.",
     source: "JAMB 2024 UTME results",
   },
   {
-    icon: HeartHandshake,
+    icon: "heart-handshake",
     stat: "Less than 30%",
     title: "of Nigerian secondary students have access to a school counsellor",
     text: "Most stream decisions therefore rely on informal advice from parents, teachers, and peers, often shaped by prestige rather than demonstrated aptitude.",
     source: "Guidance & counselling research",
   },
   {
-    icon: BookOpen,
+    icon: "book-open",
     stat: "2025/26",
     title: "The NERDC reform adds trade and digital subjects",
     text: "The revised curriculum introduces a compulsory trade subject and Digital Technologies: two more decisions at age 14 or 15, with no Nigerian tool yet built to guide them.",
