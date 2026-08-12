@@ -38,9 +38,21 @@ function PublicRoute({ children }: { children: ReactNode }) {
   if (!token) return <>{children}</>;
   if (role === "GUEST") return <>{children}</>;
   if (role === "STUDENT") {
+    // While useResumeStep is still resolving (studentLanding === null), do NOT
+    // redirect anywhere: Login/LandingPage already navigate on their own once
+    // /auth/progress resolves. Redirecting to "/" here races that navigation
+    // (and wins it on slow connections), dumping mid-assessment students on
+    // the landing hub instead of resuming their step.
+    if (!studentLanding) {
+      return (
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <span className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        </div>
+      );
+    }
     // Only divert mid-assessment students back into the flow. A student who
     // already has a recommendation (nothing pending) stays on the landing hub.
-    return studentLanding && studentLanding !== "/history" ? (
+    return studentLanding !== "/history" ? (
       <Navigate to={studentLanding} replace />
     ) : (
       <Navigate to="/" replace />
