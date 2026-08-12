@@ -1,21 +1,15 @@
 # STREAM-WISE — PLANNED WORK (running backlog)
 
-Forward-looking list of future work. Add items here as they come up during
-sessions; cross off or remove when done. Deploy/runbook state lives in
-`todo.txt`; this file is for *planned* changes, not verified state.
+Forward-looking list of future work for THIS app. Add items here as they come
+up during sessions; cross off or remove when done. Deploy/runbook state lives
+in `todo.txt`; this file is for *planned* changes, not verified state.
 
-## Facet package improvements
-Publish these with the next facet release — do NOT rush a release for any
-single item alone; bundle them with the next batch of new components.
+NOTE: facet package improvements (DataTable generic DX, new components, etc.)
+are tracked in the facet repo's own backlog: `facet/.agent/output.txt`
+(+ `facet/.agent/analysis-current-state.md`). Keep facet-side plans there,
+not here.
 
-- [ ] DX: relax `DataTable`'s generic constraint `T extends Record<string, unknown>`
-      so consumers can pass `interface`-typed rows. Interfaces lack an index
-      signature and fail the constraint (TS2344), forcing consumers to convert
-      their row type to a `type` alias — exactly what we had to do for
-      `AuditLogRow` in AdminAudit (stream-wise commit 455d5a6).
-      File: facet repo `packages/components/src/ui/data-table.tsx`
-      Package: `@arcevo/facet-components`
-
-## Inherited from todo.txt "## NEXT"
-- Counselor portal depth, admin CRUD, CSV/PDF export polish, auth hardening,
-  docs, profile editing + per-page step guards.
+## App work (this repo)
+- [ ] Counselor portal depth, admin CRUD, CSV/PDF export polish, auth
+      hardening, docs, profile editing + per-page step guards (inherited
+      from todo.txt "## NEXT").
