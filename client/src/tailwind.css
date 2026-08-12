@@ -1,5 +1,5 @@
-@source "../../node_modules/@arcevo/facet-components/dist";
-@source "../../node_modules/@arcevo/facet-layout/dist";
+@source "../node_modules/@arcevo/facet-components/dist";
+@source "../node_modules/@arcevo/facet-layout/dist";
 
 /* =================================================================
  * StreamWise: Tailwind v4 theme extension

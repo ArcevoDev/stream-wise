@@ -90,15 +90,15 @@ export default function AdminDashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpis.map((kpi) => (
-          <Card key={kpi.label}>
+          <Card key={kpi.label} className="min-w-0">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Icon name={kpi.icon} size={18} />
                 </span>
-                <div>
-                  <p className="text-2xl font-black text-foreground">{kpi.value}</p>
-                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-2xl font-black text-foreground tabular-nums">{kpi.value}</p>
+                  <p className="truncate text-xs text-muted-foreground">{kpi.label}</p>
                 </div>
               </div>
             </CardContent>
