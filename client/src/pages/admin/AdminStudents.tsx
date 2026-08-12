@@ -16,7 +16,13 @@ import {
   TableCell,
   Alert,
   AlertDescription,
+  EmptyState,
   Icon,
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
 } from "@arcevo/facet-components";
 import type { UserRole } from "@/types";
 
@@ -143,10 +149,12 @@ export default function AdminStudents() {
               Loading students…
             </div>
           ) : !data || data.students.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-16 text-muted-foreground">
-              <Icon name="users" size={28} className="text-muted-foreground/50" />
-              <p className="text-sm">No students match your filters.</p>
-            </div>
+            <EmptyState
+              icon={<Icon name="users" size={28} />}
+              title="No students match your filters"
+              description="Try adjusting your search, or clear the query to see every student."
+              className="my-8"
+            />
           ) : (
             <>
               <div className="-mx-4 overflow-x-auto px-4">
@@ -203,30 +211,34 @@ export default function AdminStudents() {
               </div>
 
               {data.pagination.totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                   <p className="text-xs text-muted-foreground">
-                    Page {data.pagination.page} of {data.pagination.totalPages}
+                    Page {data.pagination.page} of {data.pagination.totalPages} · {data.pagination.total} total
                   </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={data.pagination.page <= 1}
-                      onClick={() => goToPage(data.pagination.page - 1)}
-                    >
-                      <Icon name="chevron-left" size={14} />
-                      Prev
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={data.pagination.page >= data.pagination.totalPages}
-                      onClick={() => goToPage(data.pagination.page + 1)}
-                    >
-                      Next
-                      <Icon name="chevron-right" size={14} />
-                    </Button>
-                  </div>
+                  <Pagination className="w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (data.pagination.page > 1) goToPage(data.pagination.page - 1);
+                          }}
+                          className={data.pagination.page <= 1 ? "pointer-events-none opacity-50" : undefined}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (data.pagination.page < data.pagination.totalPages) goToPage(data.pagination.page + 1);
+                          }}
+                          className={data.pagination.page >= data.pagination.totalPages ? "pointer-events-none opacity-50" : undefined}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 </div>
               )}
             </>

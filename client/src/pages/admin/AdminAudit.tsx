@@ -1,19 +1,20 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
-import { Icon, Card, CardContent, CardHeader, CardTitle, Badge, Alert, AlertDescription } from "@arcevo/facet-components";
+import {
+  DataTable,
+  type DataTableColumn,
+  Alert,
+  AlertDescription,
+  Badge,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Icon,
+} from "@arcevo/facet-components";
 import type { AuditLogRow } from "@/types";
-
-interface AuditEntry {
-  id: string;
-  studentId: string | null;
-  actorId: string | null;
-  action: string;
-  details: string | null;
-  createdAt: string;
-  actor: AuditLogRow["actor"];
-  student: AuditLogRow["student"];
-}
 
 const ACTION_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" }> = {
   LOGIN: { label: "Login", variant: "default" },
@@ -24,8 +25,68 @@ const ACTION_LABELS: Record<string, { label: string; variant: "default" | "secon
   JAMB_VALIDATED: { label: "JAMB validated", variant: "success" },
 };
 
+const COLUMNS: DataTableColumn<AuditLogRow>[] = [
+  {
+    key: "createdAt",
+    header: "When",
+    accessor: (log) => new Date(log.createdAt).toLocaleString(),
+  },
+  {
+    key: "action",
+    header: "Event",
+    accessor: (log) => ACTION_LABELS[log.action]?.label ?? log.action,
+    cell: (log) => {
+      const action = ACTION_LABELS[log.action] ?? { label: log.action, variant: "secondary" as const };
+      return <Badge variant={action.variant}>{action.label}</Badge>;
+    },
+  },
+  {
+    key: "actor",
+    header: "Actor",
+    accessor: (log) => log.actor?.fullName ?? "Unknown actor",
+    cell: (log) => (
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium text-foreground">
+          {log.actor?.fullName ?? "Unknown actor"}
+          {log.actor?.role && (
+            <span className="ml-1.5 font-mono text-[10px] uppercase text-muted-foreground">
+              {log.actor.role.replaceAll("_", " ")}
+            </span>
+          )}
+        </p>
+        <p className="truncate text-xs text-muted-foreground">
+          {log.actor?.email ?? log.student?.email ?? "system"}
+        </p>
+      </div>
+    ),
+  },
+  {
+    key: "student",
+    header: "Target",
+    accessor: (log) => (log.student && log.student.id !== log.actorId ? log.student.fullName : "—"),
+    cell: (log) =>
+      log.student && log.student.id !== log.actorId ? (
+        <span className="text-sm text-foreground">{log.student.fullName}</span>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      ),
+  },
+  {
+    key: "details",
+    header: "Details",
+    accessor: (log) => log.details ?? "—",
+    cell: (log) =>
+      log.details ? (
+        <span className="text-sm text-muted-foreground">{log.details}</span>
+      ) : (
+        <span className="text-sm text-muted-foreground">—</span>
+      ),
+    sortable: false,
+  },
+];
+
 export default function AdminAudit() {
-  const [logs, setLogs] = useState<AuditEntry[]>([]);
+  const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,7 +94,7 @@ export default function AdminAudit() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await api.get<{ logs: AuditEntry[] }>("/admin/audit", {
+        const { data } = await api.get<{ logs: AuditLogRow[] }>("/admin/audit", {
           params: { limit: 100 },
         });
         if (!cancelled) setLogs(data.logs);
@@ -77,54 +138,22 @@ export default function AdminAudit() {
               Loading audit trail…
             </div>
           ) : logs.length === 0 ? (
-            <p className="py-16 text-center text-sm text-muted-foreground">
-              No audit records yet. Audit logging is wired up for the next milestone.
-            </p>
+            <EmptyState
+              icon={<Icon name="shield-check" size={28} />}
+              title="No audit records yet"
+              description="Audit logging is wired up for the next milestone. System events will appear here as students interact with the platform."
+            />
           ) : (
-            <div className="space-y-2">
-              {logs.map((log) => {
-                const action = ACTION_LABELS[log.action] ?? {
-                  label: log.action,
-                  variant: "secondary" as const,
-                };
-                return (
-                  <div
-                    key={log.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge variant={action.variant}>{action.label}</Badge>
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-medium text-foreground">
-                          {log.actor?.fullName ?? "Unknown actor"}
-                          {log.actor?.role && (
-                            <span className="ml-1.5 font-mono text-[10px] uppercase text-muted-foreground">
-                              {log.actor.role.replaceAll("_", " ")}
-                            </span>
-                          )}
-                        </p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {log.actor?.email ?? log.student?.email ?? "system"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {log.student && log.student.id !== log.actorId && (
-                        <p className="text-[11px] text-muted-foreground">
-                          on <span className="font-medium text-foreground">{log.student.fullName}</span>
-                        </p>
-                      )}
-                      {log.details && (
-                        <p className="text-xs text-muted-foreground">{log.details}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <DataTable
+              columns={COLUMNS}
+              data={logs}
+              searchable
+              searchPlaceholder="Search events, actors, students…"
+              exportable
+              exportFileName="audit-trail"
+              pagination
+              pageSize={15}
+            />
           )}
         </CardContent>
       </Card>

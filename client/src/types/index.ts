@@ -276,7 +276,7 @@ export interface ClearHistoryResponse {
  * Audit trail identity (GET /admin/audit). `actor` is who performed the
  * action; `student` is the subject (may be null for system/staff-wide ops).
  */
-export interface AuditLogRow {
+export type AuditLogRow = {
   id: string;
   studentId: string | null;
   actorId: string | null;
@@ -288,7 +288,7 @@ export interface AuditLogRow {
   createdAt: string;
   actor: { id: string; fullName: string; email: string; role: UserRole | null } | null;
   student: { id: string; fullName: string; email: string } | null;
-}
+};
 
 export interface AuditLogsResponse {
   logs: AuditLogRow[];
