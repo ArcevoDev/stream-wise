@@ -1,4 +1,4 @@
-import type { IconName } from "@arcevo/facet-components";
+import type { IconName } from "../../icons.generated.tsx";
 
 export interface FeatureItem {
   icon: IconName;

@@ -3,7 +3,8 @@ import { useAuth } from "@/context/AuthContext";
 import ThemeToggle from "./ThemeToggle";
 import BrandLogo from "./BrandLogo";
 import AccountMenu from "./AccountMenu";
-import { Navbar, Button, Icon } from "@arcevo/facet-components";
+import { Navbar, Button } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 /** react-router adapter so the facet Navbar renders SPA links. */
 function FacetLink({ href, children, className, onClick }: { href: string; className?: string; children?: React.ReactNode; onClick?: (e: React.MouseEvent) => void }) {
@@ -72,7 +73,7 @@ export default function SiteNav() {
           {isStaff && (
             <Button asChild variant="ghost" size="sm">
               <Link to="/admin">
-                <Icon name="dashboard" size={14} />
+                <GeneratedIcon name="dashboard" size={14} />
                 Dashboard
               </Link>
             </Button>
@@ -134,7 +135,7 @@ export default function SiteNav() {
             href="/register"
             className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
           >
-            <Icon name="arrowRight" size={16} />
+            <GeneratedIcon name="arrow-right" size={16} />
             Create account
           </FacetLink>
           <button
@@ -142,7 +143,7 @@ export default function SiteNav() {
             onClick={handleLogout}
             className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive hover:bg-destructive/10"
           >
-            <Icon name="logout" size={16} />
+            <GeneratedIcon name="logout" size={16} />
             Exit guest session
           </button>
         </>
@@ -152,7 +153,7 @@ export default function SiteNav() {
             href="/login"
             className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground"
           >
-            <Icon name="user" size={16} />
+            <GeneratedIcon name="user" size={16} />
             Login
           </FacetLink>
           <FacetLink

@@ -4,7 +4,8 @@ import { useAuth } from "@/context/AuthContext";
 import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import type { Gender, ConsentPayload } from "@/types/index";
-import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
+import { Button, Input, Label, Card, CardContent, CardHeader, CardTitle, CardDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 import PasswordInput from "@/components/PasswordInput";
 
 interface RegisterForm {
@@ -113,7 +114,7 @@ export default function Register() {
               <div>
                 <Label htmlFor="fullName">Full Name</Label>
                 <div className="relative">
-                  <Icon
+                  <GeneratedIcon
                     name="user"
                     size={15}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -135,7 +136,7 @@ export default function Register() {
               <div>
                 <Label htmlFor="reg-email">Email Address</Label>
                 <div className="relative">
-                  <Icon
+                  <GeneratedIcon
                     name="mail"
                     size={15}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -203,7 +204,7 @@ export default function Register() {
                 <div>
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
                   <div className="relative">
-                    <Icon
+                    <GeneratedIcon
                       name="calendar"
                       size={15}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -228,7 +229,7 @@ export default function Register() {
                   <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
-                  <Icon
+                  <GeneratedIcon
                     name="school"
                     size={15}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -252,7 +253,7 @@ export default function Register() {
                   <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <div className="relative">
-                  <Icon
+                  <GeneratedIcon
                     name="chart-column"
                     size={15}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -270,7 +271,7 @@ export default function Register() {
 
               {/* Consent link-out. The ethics gate lives on the landing page */}
               <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-start gap-2">
-                <Icon name="shield-check" size={14} className="shrink-0 mt-0.5 text-muted-foreground" />
+                <GeneratedIcon name="shield-check" size={14} className="shrink-0 mt-0.5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   You&apos;ll be asked to review and agree to the{" "}
                   <Link to="/" className="font-semibold text-primary hover:underline">
@@ -282,7 +283,7 @@ export default function Register() {
 
               {error && (
                 <Alert variant="destructive">
-                  <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
+                  <GeneratedIcon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -290,13 +291,13 @@ export default function Register() {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
-                    <Icon name="loader-circle" size={14} className="animate-spin" />
+                    <GeneratedIcon name="loader-circle" size={14} className="animate-spin" />
                     Creating Account…
                   </>
                 ) : (
                   <>
                     Create Account & Start
-                    <Icon name="arrow-right" size={15} />
+                    <GeneratedIcon name="arrow-right" size={15} />
                   </>
                 )}
               </Button>

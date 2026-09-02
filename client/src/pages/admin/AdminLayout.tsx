@@ -2,7 +2,8 @@ import { NavLink, Outlet, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Button, Icon } from "@arcevo/facet-components";
+import { Button } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import { api } from "@/api";
 
 const NAV_ITEMS = [
@@ -79,7 +80,7 @@ export default function AdminLayout() {
                 }`
               }
             >
-              <Icon name={item.icon} size={16} />
+              <GeneratedIcon name={item.icon} size={16} />
               {item.label}
             </NavLink>
           ))}
@@ -90,7 +91,7 @@ export default function AdminLayout() {
               className="w-full justify-start gap-2.5 mt-4"
               onClick={handleExport}
             >
-              <Icon name="download" size={16} />
+              <GeneratedIcon name="download" size={16} />
               Export CSV
             </Button>
           )}
@@ -106,7 +107,7 @@ export default function AdminLayout() {
             </div>
             <ThemeToggle />
             <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
-              <Icon name="log-out" size={16} />
+              <GeneratedIcon name="log-out" size={16} />
             </Button>
           </div>
         </div>
@@ -130,7 +131,7 @@ export default function AdminLayout() {
         <div className="flex items-center gap-1">
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Logout">
-            <Icon name="log-out" size={16} />
+            <GeneratedIcon name="log-out" size={16} />
           </Button>
         </div>
       </div>
@@ -149,7 +150,7 @@ export default function AdminLayout() {
                 }`
               }
             >
-              <Icon name={item.icon} size={18} />
+              <GeneratedIcon name={item.icon} size={18} />
               {item.label}
             </NavLink>
           ))}

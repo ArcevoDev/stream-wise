@@ -1,4 +1,5 @@
-import { Icon, useTheme } from "@arcevo/facet-components";
+import { useTheme } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 /**
  * Plain light/dark theme switch.
@@ -20,7 +21,7 @@ export default function ThemeToggle() {
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="inline-flex h-9 w-9 items-center justify-center rounded-md text-foreground/70 transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      {isDark ? <Icon name="sun" size={16} /> : <Icon name="moon" size={16} />}
+      {isDark ? <GeneratedIcon name="sun" size={16} /> : <GeneratedIcon name="moon" size={16} />}
     </button>
   );
 }

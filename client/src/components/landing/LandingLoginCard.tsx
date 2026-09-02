@@ -9,10 +9,10 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  Icon,
   Input,
   Label,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import PasswordInput from "../PasswordInput";
 
 interface LandingLoginCardProps {
@@ -43,7 +43,7 @@ export default function LandingLoginCard({
       <Card variant="glass" className="rounded-2xl border-border/60">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Icon name="clipboard-list" size={16} className="text-primary" />
+            <GeneratedIcon name="clipboard-list" size={16} className="text-primary" />
             Returning student?
           </CardTitle>
           <CardDescription>Sign in to see your results and history</CardDescription>
@@ -76,13 +76,13 @@ export default function LandingLoginCard({
               />
             </div>
             <Button type="submit" variant="outline" disabled={loggingIn} className="w-full">
-              {loggingIn ? <Icon name="loader-circle" size={14} className="animate-spin" /> : "Log in"}
+              {loggingIn ? <GeneratedIcon name="loader-circle" size={14} className="animate-spin" /> : "Log in"}
             </Button>
           </form>
 
           {error && (
             <Alert variant="destructive" className="mt-3">
-              <Icon name="circle-alert" size={14} className="mt-0.5 shrink-0" />
+              <GeneratedIcon name="circle-alert" size={14} className="mt-0.5 shrink-0" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
