@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@arcevo/facet-components";
+import GeneratedIcon, { type IconName } from "../icons.generated.tsx";
 
 interface ConfidenceGaugeProps {
   value: number;
@@ -89,11 +89,11 @@ export default function ConfidenceGauge({ value }: ConfidenceGaugeProps) {
         </text>
       </svg>
       <span className={`inline-flex items-center gap-1.5 text-sm font-bold ${color}`}>
-        <Icon name={iconName} size={14} />
+        <GeneratedIcon name={iconName} size={14} />
         {label}
       </span>
       <p className="mt-2 flex items-start gap-1.5 text-center text-[11px] leading-relaxed text-muted-foreground">
-        <Icon name="info" size={12} className="mt-0.5 shrink-0" />
+        <GeneratedIcon name="info" size={12} className="mt-0.5 shrink-0" />
         {hint}
       </p>
       <p className="mt-1 text-[10px] text-muted-foreground/60">

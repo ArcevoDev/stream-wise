@@ -6,7 +6,8 @@ import ProgressBar from "@/components/ProgressBar";
 import { getApiErrorMessage } from "@/api/errors";
 import { useLocalDraft } from "@/hooks/useLocalDraft";
 import { useAuth } from "@/context/AuthContext";
-import { Button, Input, Label, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
+import { Button, Input, Label, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 import { Subject, AcademicLevel, AcademicStream } from "@/types";
 
 interface SubjectField {
@@ -99,7 +100,7 @@ export default function Scores() {
   if (checkingConsent) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Icon name="loader-circle" size={20} className="animate-spin text-muted-foreground" />
+        <GeneratedIcon name="loader-circle" size={20} className="animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -194,7 +195,7 @@ export default function Scores() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3 mb-6">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
-                  <Icon name="clipboard-list" size={14} />
+                  <GeneratedIcon name="clipboard-list" size={14} />
                 </span>
                 <div>
                   <h2 className="font-black text-foreground text-lg">Academic Score Entry</h2>
@@ -278,7 +279,7 @@ export default function Scores() {
                 ))}
 
                 <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mt-2 flex items-center gap-3">
-                  <Icon name="chart-column" size={28} className="text-primary shrink-0" />
+                  <GeneratedIcon name="chart-column" size={28} className="text-primary shrink-0" />
                   <div>
                     <p className="text-xs text-muted-foreground">Weighted Academic Score Preview</p>
                     <p className={`text-2xl font-black ${previewColor}`}>
@@ -293,7 +294,7 @@ export default function Scores() {
 
                 {error && (
                   <Alert variant="destructive">
-                    <Icon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
+                    <GeneratedIcon name="circle-alert" size={14} className="shrink-0 mt-0.5" />
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
@@ -301,13 +302,13 @@ export default function Scores() {
                 <Button type="submit" className="w-full mt-2" disabled={loading}>
                   {loading ? (
                     <>
-                      <Icon name="loader-circle" size={14} className="animate-spin" />
+                      <GeneratedIcon name="loader-circle" size={14} className="animate-spin" />
                       Saving…
                     </>
                   ) : (
                     <>
                       Save & Continue to Interest Quiz
-                      <Icon name="arrow-right" size={15} />
+                      <GeneratedIcon name="arrow-right" size={15} />
                     </>
                   )}
                 </Button>

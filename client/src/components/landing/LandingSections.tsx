@@ -1,4 +1,5 @@
-import { Card, CardContent, Icon } from "@arcevo/facet-components";
+import { Card, CardContent } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import { FEATURES, STEPS, WHY_POINTS } from "./content";
 
 /**
@@ -14,7 +15,7 @@ export default function LandingSections() {
         {FEATURES.map((f) => (
           <Card key={f.title} variant="glass" className="rounded-2xl border-border/60">
             <CardContent className="pt-6">
-              <Icon name={f.icon} size={22} className="text-primary" />
+              <GeneratedIcon name={f.icon} size={22} className="text-primary" />
               <h3 className="mt-3 font-bold text-foreground">{f.title}</h3>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{f.text}</p>
             </CardContent>
@@ -48,7 +49,7 @@ export default function LandingSections() {
           {WHY_POINTS.map((s) => (
             <Card key={s.title} variant="glass" className="h-full rounded-2xl border-border/60 text-left">
               <CardContent className="flex h-full flex-col pt-6">
-                <Icon name={s.icon} size={20} className="text-primary" />
+                <GeneratedIcon name={s.icon} size={20} className="text-primary" />
                 <p className="mt-3 text-2xl font-black tracking-tight tabular-nums text-foreground">
                   {s.stat}
                 </p>

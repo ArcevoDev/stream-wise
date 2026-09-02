@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
-  Icon,
   Avatar,
   AvatarFallback,
   DropdownMenu,
@@ -11,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 /**
  * Authenticated user menu: avatar trigger + dropdown (results/history for
@@ -65,17 +65,17 @@ export default function AccountMenu() {
         {role === "STUDENT" ? (
           <>
             <DropdownMenuItem onSelect={() => navigate("/results")} className="cursor-pointer rounded-md py-2">
-              <Icon name="check" size={16} />
+              <GeneratedIcon name="check" size={16} />
               My Results
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate("/history")} className="cursor-pointer rounded-md py-2">
-              <Icon name="document" size={16} />
+              <GeneratedIcon name="document" size={16} />
               My History
             </DropdownMenuItem>
           </>
         ) : (
           <DropdownMenuItem onSelect={() => navigate("/admin")} className="cursor-pointer rounded-md py-2">
-            <Icon name="dashboard" size={16} />
+            <GeneratedIcon name="dashboard" size={16} />
             Staff Dashboard
           </DropdownMenuItem>
         )}
@@ -84,7 +84,7 @@ export default function AccountMenu() {
           onSelect={handleLogout}
           className="cursor-pointer rounded-md py-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
         >
-          <Icon name="logout" size={16} />
+          <GeneratedIcon name="logout" size={16} />
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>

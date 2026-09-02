@@ -10,7 +10,8 @@ import ConfidenceGauge from "@/components/ConfidenceGauge";
 import GuidanceInsights from "@/components/GuidanceInsights";
 import { getApiErrorMessage } from "@/api/errors";
 import type { JambCourse, JambValidationResult, RecommendationDetailResponse, RecommendationResult, Stream } from "@/types/index";
-import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription, Icon } from "@arcevo/facet-components";
+import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Alert, AlertDescription } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 const STREAM_COLORS: Record<Stream, string> = {
   Science: "#3B82F6",
@@ -128,7 +129,7 @@ export default function Results() {
     return (
       <div className="min-h-[calc(100vh-60px)] flex items-center justify-center">
         <div className="text-center">
-          <Icon name="loader-circle" size={40} className="text-primary animate-spin mx-auto mb-4" />
+          <GeneratedIcon name="loader-circle" size={40} className="text-primary animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground font-medium">Running AHP-SAW engine…</p>
           <p className="text-muted-foreground/70 text-xs mt-1">Computing your personalised recommendation</p>
         </div>
@@ -141,11 +142,11 @@ export default function Results() {
       <div className="min-h-[calc(100vh-60px)] flex items-center justify-center px-4">
         <Card className="max-w-md text-center">
           <CardContent className="pt-6">
-            <Icon name="triangle-alert" size={40} className="text-warning mx-auto mb-4" />
+            <GeneratedIcon name="triangle-alert" size={40} className="text-warning mx-auto mb-4" />
             <h2 className="font-bold text-foreground mb-2">Could not generate results</h2>
             <p className="text-sm text-muted-foreground mb-6">{error}</p>
             <Button onClick={() => navigate("/scores")}>
-              <Icon name="rotate-ccw" size={14} />
+              <GeneratedIcon name="rotate-ccw" size={14} />
               Start From Step 1
             </Button>
           </CardContent>
@@ -175,7 +176,7 @@ export default function Results() {
         {/* Header */}
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-full mb-3 uppercase tracking-widest">
-            <Icon name="trophy" size={12} />
+            <GeneratedIcon name="trophy" size={12} />
             Step 4 · Your Results
           </span>
           <h1 className="text-2xl font-black text-foreground sm:text-3xl">
@@ -190,7 +191,7 @@ export default function Results() {
         {/* Personality-source notice (P0-3b: renormalized, never fake data) */}
         {result.personalitySource === "renormalized" && (
           <Alert variant="warning">
-            <Icon name="info" size={16} className="text-warning shrink-0 mt-0.5" />
+            <GeneratedIcon name="info" size={16} className="text-warning shrink-0 mt-0.5" />
             <div>
               <p className="text-sm text-foreground">
                 This recommendation was computed without a Personality assessment. The
@@ -215,7 +216,7 @@ export default function Results() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-1">
-              <Icon name="chart-column" size={16} className="text-primary" />
+              <GeneratedIcon name="chart-column" size={16} className="text-primary" />
               <h3 className="font-bold text-foreground">SAW Preference Scores</h3>
             </div>
             <p className="text-xs text-muted-foreground mb-4">
@@ -262,7 +263,7 @@ export default function Results() {
         <Card className="bg-card">
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-3">
-              <Icon name="scale" size={14} className="text-primary" />
+              <GeneratedIcon name="scale" size={14} className="text-primary" />
               <h3 className="font-bold text-foreground text-sm">AHP Decision Weights Used</h3>
             </div>
             <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
@@ -285,7 +286,7 @@ export default function Results() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <Icon name="clipboard-check" size={18} className="text-primary" />
+              <GeneratedIcon name="clipboard-check" size={18} className="text-primary" />
               <h3 className="font-bold text-foreground">JAMB Subject Combination Validator</h3>
             </div>
             <p className="text-xs text-muted-foreground mb-4">
@@ -346,7 +347,7 @@ export default function Results() {
                 className="whitespace-nowrap"
               >
                 {jambLoading ? (
-                  <><Icon name="loader-circle" size={13} className="animate-spin" />Checking…</>
+                  <><GeneratedIcon name="loader-circle" size={13} className="animate-spin" />Checking…</>
                 ) : (
                   "Validate"
                 )}
@@ -365,8 +366,8 @@ export default function Results() {
                   jambResult.compliant ? "text-success" : "text-destructive"
                 }`}>
                   {jambResult.compliant
-                    ? <><Icon name="circle-check" size={15} /> All prerequisites satisfied</>
-                    : <><Icon name="circle-x" size={15} /> Missing required subjects</>
+                    ? <><GeneratedIcon name="circle-check" size={15} /> All prerequisites satisfied</>
+                    : <><GeneratedIcon name="circle-x" size={15} /> Missing required subjects</>
                   }
                 </p>
                 <p className="text-xs text-foreground mt-1">{jambResult.message}</p>
@@ -391,7 +392,7 @@ export default function Results() {
 
             {"error" in (jambResult ?? {}) && (jambResult as { error?: string })?.error && (
               <Alert variant="destructive" className="mt-3">
-                <Icon name="triangle-alert" size={14} className="shrink-0 mt-0.5" />
+                <GeneratedIcon name="triangle-alert" size={14} className="shrink-0 mt-0.5" />
                 <AlertDescription>{(jambResult as { error: string }).error}</AlertDescription>
               </Alert>
             )}
@@ -401,15 +402,15 @@ export default function Results() {
         {/* Actions */}
         <div className="flex flex-col gap-3 pb-8 no-print sm:flex-row">
           <Button variant="secondary" className="flex-1" onClick={() => navigate("/scores")}>
-            <Icon name="rotate-ccw" size={14} />
+            <GeneratedIcon name="rotate-ccw" size={14} />
             Retake Assessment
           </Button>
           <Button variant="outline" className="flex-1" onClick={() => navigate("/history")}>
-            <Icon name="clipboard-list" size={14} />
+            <GeneratedIcon name="clipboard-list" size={14} />
             View History
           </Button>
           <Button className="flex-1" onClick={() => window.print()}>
-            <Icon name="printer" size={14} />
+            <GeneratedIcon name="printer" size={14} />
             Print / Save Results
           </Button>
         </div>

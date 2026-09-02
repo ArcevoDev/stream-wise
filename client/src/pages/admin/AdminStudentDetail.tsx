@@ -15,8 +15,8 @@ import {
   TabsContent,
   Alert,
   AlertDescription,
-  Icon,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import type { UserRole } from "@/types";
 
 interface SubjectScore {
@@ -163,7 +163,7 @@ export default function AdminStudentDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
+        <GeneratedIcon name="loader-circle" size={20} className="animate-spin mr-2" />
         Loading student record…
       </div>
     );
@@ -184,7 +184,7 @@ export default function AdminStudentDetail() {
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm" className="-ml-2">
         <Link to="/admin/students">
-          <Icon name="arrow-left" size={14} />
+          <GeneratedIcon name="arrow-left" size={14} />
           Back to students
         </Link>
       </Button>
@@ -243,7 +243,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="user" size={14} />
+                  <GeneratedIcon name="user" size={14} />
                   Academic Profile
                 </CardTitle>
               </CardHeader>
@@ -280,7 +280,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="clipboard-list" size={14} />
+                  <GeneratedIcon name="clipboard-list" size={14} />
                   RIASEC
                 </CardTitle>
               </CardHeader>
@@ -309,7 +309,7 @@ export default function AdminStudentDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="graduation-cap" size={14} />
+                  <GeneratedIcon name="graduation-cap" size={14} />
                   Personality (BFI)
                 </CardTitle>
               </CardHeader>
@@ -457,7 +457,7 @@ export default function AdminStudentDetail() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Icon name="shield-check" size={14} />
+                <GeneratedIcon name="shield-check" size={14} />
                 Audit Trail
               </CardTitle>
             </CardHeader>

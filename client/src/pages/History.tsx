@@ -12,7 +12,6 @@ import {
   CardTitle,
   Badge,
   Button,
-  Icon,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -33,6 +32,7 @@ import {
   DialogDescription,
   DialogClose,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 import type { ClearHistoryResponse, RecommendationHistoryResponse, Stream } from "@/types/index";
 
 const STREAM_VARIANTS: Record<Stream, "default" | "secondary" | "success"> = {
@@ -119,14 +119,14 @@ export default function History() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Icon name="clipboard-list" size={14} />
+            <GeneratedIcon name="clipboard-list" size={14} />
             Past recommendations
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
+              <GeneratedIcon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading history…
             </div>
           ) : !data || data.history.length === 0 ? (
@@ -167,7 +167,7 @@ export default function History() {
                       className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                       onClick={() => navigate(`/results/${row.id}`)}
                     >
-                      <Icon name="document" size={12} />
+                      <GeneratedIcon name="document" size={12} />
                       View details
                     </button>
                   </div>
@@ -212,7 +212,7 @@ export default function History() {
                 disabled={clearing}
                 className="text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Icon name="trash" size={14} />
+                <GeneratedIcon name="trash" size={14} />
                 Clear history
               </Button>
             </DialogTrigger>
@@ -237,7 +237,7 @@ export default function History() {
                   </Button>
                 </DialogClose>
                 <Button variant="destructive" disabled={clearing} onClick={handleClearHistory}>
-                  {clearing ? <Icon name="loader-circle" size={14} className="animate-spin" /> : <Icon name="trash" size={14} />}
+                  {clearing ? <GeneratedIcon name="loader-circle" size={14} className="animate-spin" /> : <GeneratedIcon name="trash" size={14} />}
                   Clear history
                 </Button>
               </DialogFooter>

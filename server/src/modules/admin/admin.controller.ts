@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 import { prisma } from "@/db/prisma.js";
 import { asyncHandler } from "@/middleware/index.js";
-import { AcademicStream } from "@prisma-client";
 import { rescoreBfi, rescoreRiasec } from "@/engine/index.js";
+import { ENUM_TO_STREAM } from "@/types/domain.js";
+import type { Stream } from "@/types/domain.js";
 import type { AdminStudentsQuery, AdminAuditQuery } from "@/validators/schemas.js";
 
 /**
@@ -87,14 +88,17 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
     }),
   ]);
 
-  // Stream distribution. Align to the AcademicStream enum, default 0.
-  const streamDistribution = {
-    [AcademicStream.SCIENCE]: 0,
-    [AcademicStream.HUMANITIES]: 0,
-    [AcademicStream.BUSINESS]: 0,
+  // Stream distribution, keyed by the display Stream type ("Science" etc.)
+  // — the same convention the client's STREAM_LABELS/STREAM_COLORS expect,
+  // via the shared ENUM_TO_STREAM bridge (see domain.ts). Do not key this
+  // by the raw AcademicStream enum; that's the bug that shipped last time.
+  const streamDistribution: Record<Stream, number> = {
+    Science: 0,
+    Humanities: 0,
+    Business: 0,
   };
   for (const row of streamLogs) {
-    streamDistribution[row.topStream] = row._count._all;
+    streamDistribution[ENUM_TO_STREAM[row.topStream]] = row._count._all;
   }
 
   // Confidence histogram. 10-point bins 0-9 .. 90-100.
@@ -152,11 +156,12 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
     };
   });
 
-  // Average weighted academic score per reported stream.
+  // Average weighted academic score per reported stream — same
+  // ENUM_TO_STREAM conversion, for the same reason.
   const avgAcademicPerStream = avgScores
     .filter((r) => r.currentStream !== null)
     .map((r) => ({
-      stream: r.currentStream,
+      stream: ENUM_TO_STREAM[r.currentStream!],
       avgWeightedScore: r._avg.weightedAcademicScore ?? 0,
     }));
 

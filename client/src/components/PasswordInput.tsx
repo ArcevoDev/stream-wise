@@ -1,5 +1,6 @@
 import { useState, type InputHTMLAttributes } from "react";
-import { Icon, Input } from "@arcevo/facet-components";
+import { Input } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 /**
  * Password field with a show/hide toggle (eye icon). Left icon mirrors the
@@ -13,7 +14,7 @@ export default function PasswordInput({
 
   return (
     <div className="relative">
-      <Icon
+      <GeneratedIcon
         name="lock"
         size={15}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
@@ -30,7 +31,7 @@ export default function PasswordInput({
         className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setVisible((v) => !v)}
       >
-        {visible ? <Icon name="eye-off" size={15} /> : <Icon name="eye" size={15} />}
+        {visible ? <GeneratedIcon name="eye-off" size={15} /> : <GeneratedIcon name="eye" size={15} />}
       </button>
     </div>
   );

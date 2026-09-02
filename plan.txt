@@ -13,3 +13,335 @@ not here.
 - [ ] Counselor portal depth, admin CRUD, CSV/PDF export polish, auth
       hardening, docs, profile editing + per-page step guards (inherited
       from todo.txt "## NEXT").
+
+..........................
+
+Got it — repo cloned successfully. Let me dig into the analytics bugs you just showed me.Found it, and it's a clean one. The repo access paid off immediately — the fix already exists elsewhere in your codebase, `admin.controller.ts` just doesn't use it.
+
+**The bug:** `AdminAnalytics.tsx`'s `STREAM_LABELS`/`STREAM_COLORS`/`Stream` type all use display-cased keys (`"Science"`, `"Humanities"`, `"Business"`) — same convention `recommend.controller.ts` already handles via an `ENUM_TO_STREAM` map. But `admin.controller.ts`'s `getAnalytics` never applies that conversion — it returns the raw Prisma `AcademicStream` enum values (`SCIENCE`, `HUMANITIES`, `BUSINESS`), so every `STREAM_LABELS[stream]` / `STREAM_COLORS[stream]` lookup on the client misses and returns `undefined`. That's your "undefined: N" legend and the all-black pie slices; it's also why the "Average Weighted Academic Score by Stream" bars are all the same fallback blue instead of Science/Humanities/Business colors — same root cause, just silently defaulting there instead of showing `undefined`.
+
+The other two panels you flagged aren't bugs: "Registrations Over Time" shows one dot because your 10 test students all registered in the same month (nothing to draw a line between yet); "Top JAMB Courses" bars are equal-length because you only have 5 JAMB validations total, one per course — both are sparse-test-data artifacts, not code problems, and will resolve naturally once real students start using it.
+
+**`server/src/modules/admin/admin.controller.ts`** — fix:That comment is almost too on the nose — "Controllers must not hand-roll their own streamEnumMap literals" — and `admin.controller.ts` didn't even hand-roll one, it just skipped the conversion entirely. Fixing it directly:It's now unused elsewhere in the file too — dropping the import to avoid an unused-import build error:Clean. That's the full fix — `AdminAnalytics.tsx` needs no changes at all, since the mismatch was entirely on the server side. Pull, apply, redeploy, and the pie/legend/colors should all resolve.
+
+Now, the flowcharts — you're right, having the actual repo makes these far more accurate than my earlier best-guess versions. Let me pull the real routes and pipeline.Good — the actual route tree confirms most of what I guessed earlier, with a few corrections (consent is its own route, not folded into registration; there's a `/results/:id` for viewing past results, and a full admin sub-route tree). Updated and accurate this time:
+
+**1. Student Journey** (`client/src/App.tsx` routes)
+```
+/ (Landing, informed-consent framing)
+  → /register (PublicRoute)
+  → /consent
+  → /scores (PrivateRoute) — stream select → JSS3 avg → SS1 subjects
+  → /riasec (PrivateRoute) — 48-item RIASEC
+  → /personality (PrivateRoute) — 20-item BFI
+  → /results (PrivateRoute) — [AHP-SAW engine runs here] → recommended stream, confidence, SAW bars
+  → /results/:id — revisit a specific past recommendation
+  → /history — list of all past recommendations
+```
+
+**2. Admin Console** (nested under `/admin`, `RequireStaff` — COUNSELOR/SCHOOL_ADMIN read-only, ADMIN full access, server-enforced)
+```
+/admin (index → AdminDashboard: KPIs + completion funnel)
+  ├─ /admin/students → AdminStudents (searchable directory)
+  │     └─ /admin/students/:id → AdminStudentDetail (Profile / Scores / Recommendations / JAMB / Audit Trail tabs)
+  ├─ /admin/analytics → AdminAnalytics (5 charts: stream distribution, confidence histogram, registrations over time, top JAMB courses, avg score per stream)
+  └─ /admin/audit → AdminAudit
+```
+
+**3. AHP-SAW Recommendation Pipeline** — unchanged from before, already verified against `saw.ts`/`ahp.ts`/`confidence.ts` directly:
+```
+AcademicProfile + RiasecProfile + PersonalityProfile
+   ↓
+Normalize each to [0,1] per stream (Science / Humanities / Business)
+   ↓
+Apply AHP weights (ω₁=0.539 Academic, ω₂=0.297 RIASEC, ω₃=0.163 Personality)
+   ↓
+SAW: Vᵢ = Σ(ωⱼ · Rᵢⱼ), computed per stream
+   ↓
+Rank → topStream = argmax(Vᵢ)
+   ↓
+Confidence = rescale(V_top / ΣV) into [50,100]
+   ↓
+Guidance insight text + RecommendationLog (audit snapshot)
+```
+
+**4. System Architecture**
+```
+[Client: React SPA] --HTTPS/JSON--> [Server: Express API] --Prisma ORM--> [PostgreSQL]
+                                          ↓
+                                  [Pure Engine Layer: ahp.ts / saw.ts / riasec.ts / bfi.ts / confidence.ts]
+```
+
+With the repo in hand now, want me to go through the rest of the client (Consent.tsx, History.tsx, and the `@arcevo/facet-components` design system I saw imported in AdminAnalytics) for the same kind of audit, or pick back up on the thesis docx work?
+
+........
+
+From cb003e27111494d10288004eaa47c26125dca10a Mon Sep 17 00:00:00 2001
+From: "Claude (via chat)" <claude@anthropic.com>
+Date: Wed, 2 Sep 2026 08:40:46 +0000
+Subject: [PATCH 1/2] fix(admin): analytics stream keys must go through
+ ENUM_TO_STREAM
+
+getAnalytics returned streamDistribution/avgAcademicPerStream keyed by
+the raw Prisma AcademicStream enum (SCIENCE/HUMANITIES/BUSINESS), but
+the client's STREAM_LABELS/STREAM_COLORS are keyed by the display
+Stream type (Science/Humanities/Business). Every lookup missed,
+producing 'undefined' pie legends and all-black/all-blue-fallback
+chart colors. Route both fields through the existing ENUM_TO_STREAM
+bridge in types/domain.ts, same as recommend.controller.ts already
+does.
+---
+ server/src/modules/admin/admin.controller.ts | 23 ++++++++++++--------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/server/src/modules/admin/admin.controller.ts b/server/src/modules/admin/admin.controller.ts
+index 289a53d..3547ab3 100644
+--- a/server/src/modules/admin/admin.controller.ts
++++ b/server/src/modules/admin/admin.controller.ts
+@@ -1,8 +1,9 @@
+ import type { Request, Response } from "express";
+ import { prisma } from "@/db/prisma.js";
+ import { asyncHandler } from "@/middleware/index.js";
+-import { AcademicStream } from "@prisma-client";
+ import { rescoreBfi, rescoreRiasec } from "@/engine/index.js";
++import { ENUM_TO_STREAM } from "@/types/domain.js";
++import type { Stream } from "@/types/domain.js";
+ import type { AdminStudentsQuery, AdminAuditQuery } from "@/validators/schemas.js";
+ 
+ /**
+@@ -87,14 +88,17 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
+     }),
+   ]);
+ 
+-  // Stream distribution. Align to the AcademicStream enum, default 0.
+-  const streamDistribution = {
+-    [AcademicStream.SCIENCE]: 0,
+-    [AcademicStream.HUMANITIES]: 0,
+-    [AcademicStream.BUSINESS]: 0,
++  // Stream distribution, keyed by the display Stream type ("Science" etc.)
++  // — the same convention the client's STREAM_LABELS/STREAM_COLORS expect,
++  // via the shared ENUM_TO_STREAM bridge (see domain.ts). Do not key this
++  // by the raw AcademicStream enum; that's the bug that shipped last time.
++  const streamDistribution: Record<Stream, number> = {
++    Science: 0,
++    Humanities: 0,
++    Business: 0,
+   };
+   for (const row of streamLogs) {
+-    streamDistribution[row.topStream] = row._count._all;
++    streamDistribution[ENUM_TO_STREAM[row.topStream]] = row._count._all;
+   }
+ 
+   // Confidence histogram. 10-point bins 0-9 .. 90-100.
+@@ -152,11 +156,12 @@ export const getAnalytics = asyncHandler(async (_req: Request, res: Response) =>
+     };
+   });
+ 
+-  // Average weighted academic score per reported stream.
++  // Average weighted academic score per reported stream — same
++  // ENUM_TO_STREAM conversion, for the same reason.
+   const avgAcademicPerStream = avgScores
+     .filter((r) => r.currentStream !== null)
+     .map((r) => ({
+-      stream: r.currentStream,
++      stream: ENUM_TO_STREAM[r.currentStream!],
+       avgWeightedScore: r._avg.weightedAcademicScore ?? 0,
+     }));
+ 
+-- 
+2.43.0
+
+
+From b0be7046a6242bb4b7299d9fc0fce820e9347f23 Mon Sep 17 00:00:00 2001
+From: "Claude (via chat)" <claude@anthropic.com>
+Date: Wed, 2 Sep 2026 08:42:48 +0000
+Subject: [PATCH 2/2] fix(server): enforce consent at data-collection
+ endpoints, not just at recommendation time
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+recommend.controller.ts's consent check was, until now, the only place
+consent status was verified server-side, on the assumption stated in
+its own comment that the client already blocked reaching /scores,
+/riasec, and /personality without consent. It doesn't: PrivateRoute
+(client/src/App.tsx) checks only token + role. useResumeStep's
+consent-based redirect only fires when a logged-in student visits
+/login or /register, not on the assessment routes themselves.
+
+Net effect: an authenticated STUDENT token with consentStatus !=
+'granted' (e.g. a failed consent save, or a direct deep link) could
+submit real academic scores and RIASEC/BFI psychometric responses —
+exactly the data consent point 2 covers — and would only be blocked
+at the very last step, generating the recommendation.
+
+Adds requireConsent() middleware (same shape as the existing
+requireRole()), applied to the three write endpoints that actually
+collect data: POST /profile/scores, POST /riasec/submit, POST
+/bfi/submit. The original check in getRecommendation is left in place
+as defense-in-depth rather than removed.
+---
+ server/src/middleware/auth.middleware.ts      | 42 +++++++++++++++++++
+ server/src/modules/bfi/bfi.routes.ts          |  5 ++-
+ server/src/modules/profile/profile.routes.ts  |  6 ++-
+ .../modules/recommend/recommend.controller.ts |  7 +++-
+ server/src/modules/riasec/riasec.routes.ts    |  5 ++-
+ 5 files changed, 57 insertions(+), 8 deletions(-)
+
+diff --git a/server/src/middleware/auth.middleware.ts b/server/src/middleware/auth.middleware.ts
+index 3a680be..a8f88c2 100644
+--- a/server/src/middleware/auth.middleware.ts
++++ b/server/src/middleware/auth.middleware.ts
+@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
+ import type { NextFunction, Request, Response } from "express";
+ import type { AuthTokenPayload } from "@/types/express.js";
+ import { UserRole } from "@prisma-client";
++import { prisma } from "@/db/prisma.js";
+ 
+ export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
+   const authHeader = req.headers["authorization"];
+@@ -44,3 +45,44 @@ export function requireRole(...roles: UserRole[]): (req: Request, res: Response,
+     next();
+   };
+ }
++
++/**
++ * Consent guard. Must run AFTER authenticateToken. Previously this check
++ * only existed inside getRecommendation (recommend.controller.ts), on the
++ * (incorrect) assumption that the client already blocked reaching the data-
++ * collection endpoints without consent. It didn't: PrivateRoute only checks
++ * token + role, so a student whose consent save failed, or who deep-links
++ * straight to /scores, /riasec, or /personality, could submit real academic
++ * scores and psychometric responses with no consent on record — only
++ * getting blocked at the final /recommend call. This middleware closes that
++ * gap at the actual point of data collection, not just at the end.
++ *
++ * Does a fresh DB read rather than trusting the JWT payload: consent status
++ * is not (and must not be) part of the token claims, since it can change
++ * after the token was issued.
++ */
++export function requireConsent(): (req: Request, res: Response, next: NextFunction) => Promise<void> {
++  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
++    const studentId = req.student?.id;
++    if (!studentId) {
++      res.status(401).json({ error: "Access token required" });
++      return;
++    }
++    const student = await prisma.student.findUnique({
++      where: { id: studentId },
++      select: { consentStatus: true },
++    });
++    if (!student) {
++      res.status(404).json({ error: "Student not found" });
++      return;
++    }
++    if (student.consentStatus !== "granted") {
++      res.status(403).json({
++        error: "Consent required",
++        details: "You must review and agree to the informed consent points before this data can be submitted.",
++      });
++      return;
++    }
++    next();
++  };
++}
+diff --git a/server/src/modules/bfi/bfi.routes.ts b/server/src/modules/bfi/bfi.routes.ts
+index 8f98c30..6727d86 100644
+--- a/server/src/modules/bfi/bfi.routes.ts
++++ b/server/src/modules/bfi/bfi.routes.ts
+@@ -1,11 +1,12 @@
+ import { Router } from "express";
+ import { submitBFI, getBFI, getBfiQuestions } from "./bfi.controller.js";
+-import { authenticateToken, requireRole, validateBody } from "@/middleware/index.js";
++import { authenticateToken, requireRole, requireConsent, validateBody } from "@/middleware/index.js";
+ import { UserRole } from "@prisma-client";
+ import { bfiSubmitSchema } from "@/validators/schemas.js";
+ 
+ export const bfiRoutes = Router();
+ 
+ bfiRoutes.get("/questions", getBfiQuestions); // public - no auth needed
+-bfiRoutes.post("/submit", authenticateToken, requireRole(UserRole.STUDENT), validateBody(bfiSubmitSchema), submitBFI);
++// requireConsent: real psychometric data collection — see auth.middleware.ts.
++bfiRoutes.post("/submit", authenticateToken, requireRole(UserRole.STUDENT), requireConsent(), validateBody(bfiSubmitSchema), submitBFI);
+ bfiRoutes.get("/", authenticateToken, requireRole(UserRole.STUDENT), getBFI);
+\ No newline at end of file
+diff --git a/server/src/modules/profile/profile.routes.ts b/server/src/modules/profile/profile.routes.ts
+index 3ea0cff..673df9b 100644
+--- a/server/src/modules/profile/profile.routes.ts
++++ b/server/src/modules/profile/profile.routes.ts
+@@ -1,6 +1,6 @@
+ import { Router } from "express";
+ import { saveScores, getProfile } from "./profile.controller.js";
+-import { authenticateToken, requireRole, validateBody } from "@/middleware/index.js";
++import { authenticateToken, requireRole, requireConsent, validateBody } from "@/middleware/index.js";
+ import { UserRole } from "@prisma-client";
+ import { academicScoresSchema } from "@/validators/schemas.js";
+ 
+@@ -8,5 +8,7 @@ export const profileRoutes = Router();
+ 
+ // P1-4: student-owned data. Gate to STUDENT tokens. (Counselor/admin views
+ // of a student's profile use the /api/admin routes, not this one.)
+-profileRoutes.post("/scores", authenticateToken, requireRole(UserRole.STUDENT), validateBody(academicScoresSchema), saveScores);
++// requireConsent: this is real data collection (consent point 2) — must be
++// gated here, not just at recommendation time. See auth.middleware.ts.
++profileRoutes.post("/scores", authenticateToken, requireRole(UserRole.STUDENT), requireConsent(), validateBody(academicScoresSchema), saveScores);
+ profileRoutes.get("/", authenticateToken, requireRole(UserRole.STUDENT), getProfile);
+\ No newline at end of file
+diff --git a/server/src/modules/recommend/recommend.controller.ts b/server/src/modules/recommend/recommend.controller.ts
+index fa4e08d..b0f42ea 100644
+--- a/server/src/modules/recommend/recommend.controller.ts
++++ b/server/src/modules/recommend/recommend.controller.ts
+@@ -109,8 +109,11 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
+   const studentId = req.student!.id;
+ 
+   // P0-4a: server-side consent gate. The recommendation (and the study's
+-  // evaluation logging) requires a granted consent record. The client gates
+-  // on consentRequired from /auth/profile; this is the enforcement backstop.
++  // evaluation logging) requires a granted consent record. This used to be
++  // the only consent check in the whole request path; requireConsent() now
++  // also gates /profile/scores, /riasec/submit, and /bfi/submit — the
++  // actual data-collection endpoints — so this one is a second, defense-in-
++  // depth check rather than the sole backstop it was before.
+   const student = await prisma.student.findUnique({
+     where: { id: studentId },
+     select: { consentStatus: true },
+diff --git a/server/src/modules/riasec/riasec.routes.ts b/server/src/modules/riasec/riasec.routes.ts
+index 35d23ac..53b246b 100644
+--- a/server/src/modules/riasec/riasec.routes.ts
++++ b/server/src/modules/riasec/riasec.routes.ts
+@@ -1,11 +1,12 @@
+ import { Router } from "express";
+ import { submitRIASEC, getRIASEC, getQuestions } from "./riasec.controller.js";
+-import { authenticateToken, requireRole, validateBody } from "@/middleware/index.js";
++import { authenticateToken, requireRole, requireConsent, validateBody } from "@/middleware/index.js";
+ import { UserRole } from "@prisma-client";
+ import { riasecSubmitSchema } from "@/validators/schemas.js";
+ 
+ export const riasecRoutes = Router();
+ 
+ riasecRoutes.get("/questions", getQuestions); // public - no auth needed
+-riasecRoutes.post("/submit", authenticateToken, requireRole(UserRole.STUDENT), validateBody(riasecSubmitSchema), submitRIASEC);
++// requireConsent: real psychometric data collection — see auth.middleware.ts.
++riasecRoutes.post("/submit", authenticateToken, requireRole(UserRole.STUDENT), requireConsent(), validateBody(riasecSubmitSchema), submitRIASEC);
+ riasecRoutes.get("/", authenticateToken, requireRole(UserRole.STUDENT), getRIASEC);
+\ No newline at end of file
+-- 
+2.43.0
+
+.........
+
+On pushing directly: I can't — I don't have write credentials for your GitHub account, and I'd steer away from you pasting a token into chat (it'd sit in plaintext in this conversation). What I *can* do, since the repo's already cloned locally with full git history: commit fixes to a branch in my sandbox as I make them, then hand you a patch file you `git apply`/`git am` and push yourself after reviewing — no credentials change hands, and you keep a review step before anything ships. Let's do that from here on.Committed to a `claude-fixes` branch locally. Now continuing the sweep — Consent, History, and the design-system import:Found something more important than a UI polish bug — a real consent-enforcement gap. Let me trace it fully before fixing.Confirmed — this is real, not a hypothetical edge case. `recommend.controller.ts` even says in a comment: *"the client gates on `consentRequired` from `/auth/profile`; this is the enforcement backstop"* — but that's not actually true. I traced the client: `PrivateRoute` (which guards `/scores`, `/riasec`, `/personality`) checks only `token` and `role`, never consent. The only place consent-based redirect happens is inside `useResumeStep`, which is wired into `PublicRoute` — triggered when a logged-in student visits `/login` or `/register`, not when they're already on the assessment pages. So today: a student whose consent save silently failed, or who deep-links straight to `/scores`, can submit real academic scores, RIASEC responses, and BFI responses — the exact data your consent point 2 covers — with **zero check anywhere**, and only gets blocked at the very last step, generating the recommendation. For a system collecting psychometric data from students who may be minors, that's a genuine compliance gap, not cosmetic.
+
+Fixing it as a proper reusable middleware, same pattern as `requireRole`:Need `prisma` imported in the middleware file, and to export `requireConsent` from the barrel:Good — barrel already wildcard-exports the file, no change needed there. Just add the `prisma` import:Now wire it into the three data-collection routes:I'll also clean up the now-misleading comment in `recommend.controller.ts`, since it asserted a client-side gate that doesn't actually exist:Committing this fix separately from the analytics one, since it's a distinct and more important change:**To apply:** download it, then in your local clone:
+```
+git checkout -b claude-fixes
+git am claude-fixes.patch
+git push origin claude-fixes
+```
+That opens a normal PR-able branch — review the diff, merge when you're happy, and your deploy pipeline (Vercel + wherever the server runs) picks it up from `main` as usual. Two commits: the analytics fix, and the consent-gate fix, kept separate since the second one is a real ethics/compliance fix and worth its own review, not bundled with a chart bug.
+
+Two fixes so far:
+1. **Analytics keying bug** — `getAnalytics` wasn't converting `AcademicStream` enum values through `ENUM_TO_STREAM` before returning them, so the client's label/color lookups all missed.
+2. **Consent enforcement gap** — `/profile/scores`, `/riasec/submit`, and `/bfi/submit` could all be hit by an authenticated student with no granted consent; only `/recommend` checked it. Added a `requireConsent()` middleware, same shape as your existing `requireRole()`, gating all three.
+
+Still on my list from your "sure" — `History.tsx` and the `@arcevo/facet-components` design-system package. Want me to keep going through those now, or pause here while you review and merge these two first?

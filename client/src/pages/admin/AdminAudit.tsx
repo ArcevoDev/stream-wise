@@ -12,8 +12,8 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
-  Icon,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import type { AuditLogRow } from "@/types";
 
 const ACTION_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "success" | "warning" }> = {
@@ -127,19 +127,19 @@ export default function AdminAudit() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <Icon name="shield-check" size={14} />
+            <GeneratedIcon name="shield-check" size={14} />
             Recent events
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
+              <GeneratedIcon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading audit trail…
             </div>
           ) : logs.length === 0 ? (
             <EmptyState
-              icon={<Icon name="shield-check" size={28} />}
+              icon={<GeneratedIcon name="shield-check" size={28} />}
               title="No audit records yet"
               description="Audit logging is wired up for the next milestone. System events will appear here as students interact with the platform."
             />

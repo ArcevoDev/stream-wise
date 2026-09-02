@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { api } from "@/api";
 import { getApiErrorMessage } from "@/api/errors";
 import {
-  Card, CardContent, CardHeader, CardTitle, Progress, Alert, AlertDescription, Icon,
-  type IconName,
+  Card, CardContent, CardHeader, CardTitle, Progress, Alert, AlertDescription,
 } from "@arcevo/facet-components";
+import GeneratedIcon, { type IconName } from "../../icons.generated.tsx";
 
 interface StatsResponse {
   stats: {
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24 text-muted-foreground">
-        <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
+        <GeneratedIcon name="loader-circle" size={20} className="animate-spin mr-2" />
         Loading dashboard…
       </div>
     );
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon name={kpi.icon} size={18} />
+                  <GeneratedIcon name={kpi.icon} size={18} />
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-2xl font-black text-foreground tabular-nums">{kpi.value}</p>
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
               <div key={step.key} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 font-medium text-foreground">
-                    <Icon name={step.icon} size={14} className="text-muted-foreground" />
+                    <GeneratedIcon name={step.icon} size={14} className="text-muted-foreground" />
                     {step.label}
                   </span>
                   <span className="text-muted-foreground">
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
                 </div>
                 <Progress value={pct} />
                 {i < FUNNEL_STEPS.length - 1 && (
-                  <Icon name="arrow-right" size={12} className="mx-auto text-muted-foreground/40" />
+                  <GeneratedIcon name="arrow-right" size={12} className="mx-auto text-muted-foreground/40" />
                 )}
               </div>
             );
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
                 className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 Browse
-                <Icon name="arrow-right" size={14} />
+                <GeneratedIcon name="arrow-right" size={14} />
               </Link>
             </div>
           </CardContent>
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
                 className="flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
               >
                 View charts
-                <Icon name="arrow-right" size={14} />
+                <GeneratedIcon name="arrow-right" size={14} />
               </Link>
             </div>
           </CardContent>

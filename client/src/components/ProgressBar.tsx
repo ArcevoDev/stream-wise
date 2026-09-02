@@ -1,4 +1,5 @@
-import { Icon, Progress } from "@arcevo/facet-components";
+import { Progress } from "@arcevo/facet-components";
+import GeneratedIcon from "../icons.generated.tsx";
 
 interface ProgressBarProps {
   step: number;
@@ -37,12 +38,12 @@ export default function ProgressBar({ step, total = 4, labels = [], stepPct = 0 
             return (
               <div key={i} className="flex flex-col items-center gap-0.5 min-w-0">
                 {done ? (
-                  <Icon name="circle-check" size={14} className="text-primary shrink-0" />
+                  <GeneratedIcon name="circle-check" size={14} className="text-primary shrink-0" />
                 ) : (
-                  <Icon
-                    name="circle"
-                    size={14}
-                    className={`shrink-0 ${active ? "text-primary" : "text-muted-foreground/30"}`}
+                  <GeneratedIcon
+                     name="circle"
+                     size={14}
+                     className={`shrink-0 ${active ? "text-primary" : "text-muted-foreground/30"}`}
                   />
                 )}
                 <span

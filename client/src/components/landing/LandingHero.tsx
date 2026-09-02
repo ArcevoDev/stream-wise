@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Button, Card, CardContent, Icon } from "@arcevo/facet-components";
+import { Button, Card, CardContent } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import BrandLogo from "../BrandLogo";
 import { WHY_POINTS } from "./content";
 
@@ -50,7 +51,7 @@ export default function LandingHero({
           <Card key={s.title} variant="glass" className="h-full rounded-2xl border-border/60 text-left">
             <CardContent className="flex h-full flex-col pt-5">
               <div className="flex items-center gap-3 sm:block">
-                <Icon name={s.icon} size={18} className="text-primary shrink-0" />
+                <GeneratedIcon name={s.icon} size={18} className="text-primary shrink-0" />
                 <p className="mt-0 sm:mt-2 text-xl font-black tracking-tight tabular-nums text-foreground">
                   {s.stat}
                 </p>
@@ -66,7 +67,7 @@ export default function LandingHero({
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
         <Button size="lg" onClick={onStart}>
           {ctaLabel}
-          <Icon name="arrow-right" size={16} />
+          <GeneratedIcon name="arrow-right" size={16} />
         </Button>
         {isAuthenticated && !isGuest ? (
           <Button variant="outline" size="lg" onClick={onViewHistory}>

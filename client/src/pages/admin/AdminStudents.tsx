@@ -17,13 +17,13 @@ import {
   Alert,
   AlertDescription,
   EmptyState,
-  Icon,
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationPrevious,
   PaginationNext,
 } from "@arcevo/facet-components";
+import GeneratedIcon from "../../icons.generated.tsx";
 import type { UserRole } from "@/types";
 
 interface AdminStudentRow {
@@ -121,7 +121,7 @@ export default function AdminStudents() {
         </div>
         <form onSubmit={handleSearch} className="flex w-full items-center gap-2 sm:w-auto">
           <div className="relative flex-1 sm:flex-none">
-            <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <GeneratedIcon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9 w-full sm:w-56"
               placeholder="Search name or email…"
@@ -145,12 +145,12 @@ export default function AdminStudents() {
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
-              <Icon name="loader-circle" size={20} className="animate-spin mr-2" />
+              <GeneratedIcon name="loader-circle" size={20} className="animate-spin mr-2" />
               Loading students…
             </div>
           ) : !data || data.students.length === 0 ? (
             <EmptyState
-              icon={<Icon name="users" size={28} />}
+              icon={<GeneratedIcon name="users" size={28} />}
               title="No students match your filters"
               description="Try adjusting your search, or clear the query to see every student."
               className="my-8"
@@ -194,7 +194,7 @@ export default function AdminStudents() {
                           <TableCell>
                             <span className="flex items-center gap-1.5">
                               {s.hasRecommendation ? (
-                                <Icon name="shield-check" size={14} className="text-success" />
+                                <GeneratedIcon name="shield-check" size={14} className="text-success" />
                               ) : (
                                 <span className="inline-block h-2 w-2 rounded-full bg-muted" />
                               )}

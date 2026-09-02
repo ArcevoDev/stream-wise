@@ -1,4 +1,4 @@
-import { Icon, type IconName } from "@arcevo/facet-components";
+import GeneratedIcon, { type IconName } from "../icons.generated.tsx";
 import type { Stream } from "@/types/index.js";
 
 interface StreamMeta {
@@ -70,14 +70,14 @@ export default function StreamCard({ stream, score, rank, maxScore }: StreamCard
         <span
           className={`absolute -top-3 left-4 inline-flex items-center gap-1 text-xs font-bold px-3 py-1 rounded-full ${meta.badge}`}
         >
-          <Icon name="star" size={10} className="fill-current" />
+          <GeneratedIcon name="star" size={10} className="fill-current" />
           Top Recommendation
         </span>
       )}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           <span className={`inline-flex items-center justify-center w-9 h-9 rounded-xl shrink-0 ${meta.iconBg}`}>
-            <Icon name={iconName} size={18} className={meta.iconColor} />
+            <GeneratedIcon name={iconName} size={18} className={meta.iconColor} />
           </span>
           <div className="min-w-0">
             <p className="font-bold text-foreground truncate">{stream} Stream</p>
