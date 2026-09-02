@@ -6,7 +6,7 @@ import {
 } from "./ahp.js";
 
 describe("computeAhpWeights", () => {
-  it("derives the canonical weights [0.540, 0.297, 0.163] from the expert matrix", () => {
+  it("derives the canonical weights [0.539, 0.297, 0.164] from the expert matrix", () => {
     const result = computeAhpWeights(DEFAULT_PAIRWISE_MATRIX);
     // Thesis §3.5.2: five guidance counsellors' pairwise judgements.
     expect(result.weights[0]).toBeCloseTo(0.54, 2);

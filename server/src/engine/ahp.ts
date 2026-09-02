@@ -36,7 +36,7 @@ export const DEFAULT_CRITERION_LABELS: [string, string, string] = [
  *   C2 [ 1/2,   1,    2  ]
  *   C3 [ 1/3,  1/2,   1  ]
  *
- * Expected derived weights: ω1 ≈ 0.540, ω2 ≈ 0.297, ω3 ≈ 0.163 (CR ≈ 0.007).
+  * Expected derived weights: ω1 ≈ 0.539, ω2 ≈ 0.297, ω3 ≈ 0.164 (CR ≈ 0.007).
  * This constant is the SEED source for the versioned AhpWeightSet table
  * (see prisma/seed.ts). The engine itself never imports it at runtime.
  */

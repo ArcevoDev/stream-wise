@@ -79,7 +79,7 @@ function recommendationFromLog(
     confidenceLevel: log.confidenceLevel,
     guidanceInsight: log.guidanceInsight,
     ahpWeights: {
-      weights: snapshot.weights ?? [0.540, 0.297, 0.163],
+      weights: snapshot.weights ?? [0.539, 0.297, 0.164],
       weightSetId: weightSetMeta?.id ?? null,
       labels: weightSetMeta?.labels ?? ["Academic Performance", "Vocational Interest (RIASEC)", "Personality Traits"],
       cr: weightSetMeta?.cr ?? 0.007,
@@ -108,9 +108,10 @@ function renormalizeWithoutPersonality(weights: [number, number, number]): [numb
 export const getRecommendation = asyncHandler(async (req: Request, res: Response) => {
   const studentId = req.student!.id;
 
-  // P0-4a: server-side consent gate. The recommendation (and the study's
-  // evaluation logging) requires a granted consent record. The client gates
-  // on consentRequired from /auth/profile; this is the enforcement backstop.
+  // P0-4a: server-side consent gate (defense-in-depth). requireConsent()
+  // middleware now gates /profile/scores, /riasec/submit, and /bfi/submit —
+  // the actual data-collection endpoints — so this check is a second layer
+  // rather than the sole backstop it was before. See auth.middleware.ts.
   const student = await prisma.student.findUnique({
     where: { id: studentId },
     select: { consentStatus: true },
@@ -148,7 +149,7 @@ export const getRecommendation = asyncHandler(async (req: Request, res: Response
   });
   const weights: [number, number, number] = activeWeightSet
     ? (activeWeightSet.weights as unknown as [number, number, number])
-    : [0.540, 0.297, 0.163]; // hardcoded fallback ONLY if seeding was skipped (dev safety net)
+    : [0.539, 0.297, 0.164]; // hardcoded fallback ONLY if seeding was skipped (dev safety net)
   const weightSetId = activeWeightSet?.id ?? null;
 
   // --- P0-3a: per-stream academic scoring (thesis §3.5.3) ---
